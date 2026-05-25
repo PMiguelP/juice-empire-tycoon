@@ -1,0 +1,35 @@
+{
+  "saveVersion": 3,
+  "level": 28,
+  "coins": 130,
+  "inventory": [
+    null,
+    null,
+    null,
+    null,
+    null
+  ],
+  "selectedSlot": 0,
+  "backpack": [
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null
+  ],
+  "plotUnlocks": [
+    true,
+    false,
+    false
+  ]
+}
