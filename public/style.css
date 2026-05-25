@@ -895,6 +895,158 @@ body {
     gap: 18px;
 }
 
+.sell-overlay {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+    z-index: 6;
+}
+
+.sell-overlay.is-open {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.sell-scrim {
+    position: absolute;
+    inset: 0;
+    background: rgba(8, 10, 14, 0.82);
+    backdrop-filter: blur(6px);
+}
+
+.sell-panel {
+    position: relative;
+    z-index: 1;
+    width: min(1040px, 94vw);
+    padding: 22px 24px 24px;
+    border-radius: 22px;
+    background: linear-gradient(
+        145deg,
+        rgba(24, 28, 40, 0.96),
+        rgba(12, 14, 20, 0.96)
+    );
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 40px 80px rgba(0, 0, 0, 0.55);
+}
+
+.sell-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+}
+
+.sell-title {
+    font-family: "Press Start 2P", monospace;
+    font-size: 1rem;
+    color: var(--hud-accent-2);
+    margin-bottom: 6px;
+}
+
+.sell-subtitle {
+    font-size: 0.8rem;
+    opacity: 0.7;
+}
+
+.sell-close {
+    border: none;
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--hud-text);
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 700;
+}
+
+.sell-body {
+    display: grid;
+    grid-template-columns: 1fr minmax(220px, 280px);
+    gap: 18px;
+}
+
+.sell-inventory {
+    display: grid;
+    gap: 18px;
+}
+
+.sell-list {
+    padding: 14px;
+    border-radius: 16px;
+    background: rgba(10, 12, 16, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    display: grid;
+    gap: 12px;
+    align-content: start;
+}
+
+.sell-section-title {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    opacity: 0.7;
+}
+
+.sell-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(90px, 1fr));
+    gap: 10px;
+}
+
+.sell-slot {
+    position: relative;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    background: rgba(34, 38, 48, 0.85);
+    color: var(--hud-text);
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    display: grid;
+    place-items: center;
+    text-align: center;
+    padding: 6px;
+    font-weight: 600;
+}
+
+.sell-slot.is-draggable {
+    cursor: grab;
+}
+
+.sell-slot.is-draggable:active {
+    cursor: grabbing;
+}
+
+.sell-slot-label {
+    font-size: 0.7rem;
+}
+
+.sell-slot-price {
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    font-size: 0.6rem;
+    opacity: 0.6;
+}
+
+.sell-action {
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(30, 38, 48, 0.9);
+    color: var(--hud-text);
+    padding: 10px 12px;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.sell-note {
+    font-size: 0.7rem;
+    opacity: 0.6;
+}
+
 @media (max-width: 720px) {
     .hud {
         padding: 14px 16px 18px;
@@ -973,6 +1125,14 @@ body {
     }
 
     .shop-body {
+        grid-template-columns: 1fr;
+    }
+
+    .sell-panel {
+        padding: 18px;
+    }
+
+    .sell-body {
         grid-template-columns: 1fr;
     }
 }

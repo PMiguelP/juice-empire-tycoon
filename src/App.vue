@@ -42,7 +42,9 @@ const selectedBackpackIndex = ref<number | null>(null);
 const dragSource = ref<DragSource>(null);
 const selectedPlotIndex = ref(0);
 const plotUnlocks = ref<boolean[]>([true, false, false]);
-const sellSlots = ref<Array<string | null>>(Array.from({ length: 6 }, () => null));
+const sellSlots = ref<Array<string | null>>(
+    Array.from({ length: 6 }, () => null),
+);
 
 const farmPlots = [
     { name: "South Field", size: "15 tiles", cost: 0 },
@@ -152,7 +154,10 @@ const getItemsByKind = (kind: "backpack" | "quickbar" | "sell") => {
     return sellSlots.value;
 };
 
-const setItemsByKind = (kind: "backpack" | "quickbar" | "sell", items: Array<string | null>) => {
+const setItemsByKind = (
+    kind: "backpack" | "quickbar" | "sell",
+    items: Array<string | null>,
+) => {
     if (kind === "backpack") {
         backpack.value = items;
         return;
@@ -164,7 +169,10 @@ const setItemsByKind = (kind: "backpack" | "quickbar" | "sell", items: Array<str
     sellSlots.value = items;
 };
 
-const handleDragStart = (kind: "backpack" | "quickbar" | "sell", index: number) => {
+const handleDragStart = (
+    kind: "backpack" | "quickbar" | "sell",
+    index: number,
+) => {
     const sourceItems = getItemsByKind(kind);
     if (!sourceItems[index]) {
         return;
@@ -429,7 +437,9 @@ const handleKey = (event: KeyboardEvent) => {
     }
 
     if (
-        (event.code === "KeyP" || event.key.toLowerCase() === "p") &&
+        (event.code === "KeyP" ||
+            event.key?.toLowerCase?.() === "p" ||
+            event.keyCode === 80) &&
         !event.repeat
     ) {
         sellMenuOpen.value = !sellMenuOpen.value;
@@ -491,7 +501,7 @@ const handleKey = (event: KeyboardEvent) => {
 };
 
 onMounted(() => {
-    window.addEventListener("keydown", handleKey);
+    window.addEventListener("keydown", handleKey, { capture: true });
     void loadState();
 
     EventBus.on("hud:set-level", setLevel);
@@ -502,7 +512,7 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
-    window.removeEventListener("keydown", handleKey);
+    window.removeEventListener("keydown", handleKey, { capture: true });
 
     EventBus.off("hud:set-level", setLevel);
     EventBus.off("hud:add-level", addLevel);
@@ -861,6 +871,124 @@ onUnmounted(() => {
                                 Press L or Esc to close.
                             </div>
                         </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="sell-overlay" :class="{ 'is-open': sellMenuOpen }">
+            <div class="sell-scrim"></div>
+            <div class="sell-panel" role="dialog" aria-label="Sell items">
+                <div class="sell-header">
+                    <div>
+                        <div class="sell-title">Inventory Sell</div>
+                        <div class="sell-subtitle">
+                            Drag items to the right slots to put them on sale.
+                        </div>
+                    </div>
+                    <button
+                        class="sell-close"
+                        type="button"
+                        @click="sellMenuOpen = false"
+                        aria-label="Close sell menu"
+                    >
+                        ✕
+                    </button>
+                </div>
+                <div class="sell-body">
+                    <div class="sell-inventory">
+                        <div class="inventory-backpack">
+                            <div class="inventory-section-title">Backpack</div>
+                            <div class="inventory-grid">
+                                <button
+                                    v-for="(item, index) in backpack"
+                                    :key="`sell-backpack-${index}`"
+                                    class="inventory-cell"
+                                    :class="{
+                                        'is-selected':
+                                            selectedBackpackIndex === index,
+                                        'is-draggable': Boolean(item),
+                                    }"
+                                    type="button"
+                                    @click="selectBackpackSlot(index)"
+                                    draggable="true"
+                                    @dragstart="
+                                        handleDragStart('backpack', index)
+                                    "
+                                    @dragend="handleDragEnd"
+                                    @dragover.prevent
+                                    @drop="handleDrop('backpack', index)"
+                                >
+                                    <span class="inventory-cell-label">
+                                        {{ item ?? "" }}
+                                    </span>
+                                    <span class="inventory-cell-index">
+                                        {{ index + 1 }}
+                                    </span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="inventory-quickbar">
+                            <div class="inventory-section-title">Quickbar</div>
+                            <div class="inventory-quickbar-grid">
+                                <button
+                                    v-for="(item, index) in inventory"
+                                    :key="`sell-quickbar-${index}`"
+                                    class="inventory-cell"
+                                    :class="{
+                                        'is-selected': inventoryIndex === index,
+                                        'is-draggable': Boolean(item),
+                                    }"
+                                    type="button"
+                                    @click="assignToQuickbar(index)"
+                                    draggable="true"
+                                    @dragstart="
+                                        handleDragStart('quickbar', index)
+                                    "
+                                    @dragend="handleDragEnd"
+                                    @dragover.prevent
+                                    @drop="handleDrop('quickbar', index)"
+                                >
+                                    <span class="inventory-cell-label">
+                                        {{ item ?? "" }}
+                                    </span>
+                                    <span class="inventory-cell-index">
+                                        {{ index + 1 }}
+                                    </span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="sell-list">
+                        <div class="sell-section-title">Sell Slots</div>
+                        <div class="sell-grid">
+                            <button
+                                v-for="(item, index) in sellSlots"
+                                :key="`sell-slot-${index}`"
+                                class="sell-slot"
+                                :class="{ 'is-draggable': Boolean(item) }"
+                                type="button"
+                                draggable="true"
+                                @dragstart="handleDragStart('sell', index)"
+                                @dragend="handleDragEnd"
+                                @dragover.prevent
+                                @drop="handleDrop('sell', index)"
+                            >
+                                <span class="sell-slot-label">
+                                    {{ item ?? "" }}
+                                </span>
+                                <span class="sell-slot-price">
+                                    {{ getSellPrice(item) }}c
+                                </span>
+                            </button>
+                        </div>
+                        <button
+                            class="sell-action"
+                            type="button"
+                            @click="sellItems"
+                        >
+                            Sell Items
+                        </button>
+                        <div class="sell-note">Press P or Esc to close.</div>
                     </div>
                 </div>
             </div>
