@@ -5,6 +5,9 @@ export class Game extends Phaser.Scene {
 	camera: Phaser.Cameras.Scene2D.Camera;
 	map: Phaser.Tilemaps.Tilemap | null = null;
 	player?: Phaser.Physics.Arcade.Sprite;
+	interactKey?: Phaser.Input.Keyboard.Key;
+	centrifTexts: Phaser.GameObjects.Text[] = [];
+	centrifCenters: { x: number; y: number }[] = [];
 	wasd?: {
 		up: Phaser.Input.Keyboard.Key;
 		down: Phaser.Input.Keyboard.Key;
@@ -86,13 +89,49 @@ export class Game extends Phaser.Scene {
 		const zoomY = this.camera.height / mapHeight;
 		this.camera.setZoom(Math.max(zoomX, zoomY));
 
+		// Spawn player at `playerSpawn` object if available, otherwise center
+		let spawnX = mapWidth / 2;
+		let spawnY = mapHeight / 2;
+		const spawnLayer = this.map.getObjectLayer("playerSpawn");
+		if (spawnLayer?.objects?.length) {
+			const obj = spawnLayer.objects[0] as Phaser.Types.Tilemaps.TiledObject;
+			spawnX = (obj.x ?? spawnX) + (obj.width ? obj.width / 2 : 0);
+			spawnY = (obj.y ?? spawnY) + (obj.height ? obj.height / 2 : 0);
+		}
+
 		this.player = this.physics.add
-			.sprite(mapWidth / 2, mapHeight / 2, "player", 0)
+			.sprite(spawnX, spawnY, "player", 0)
 			.setCollideWorldBounds(true);
 		if (colisionLayer) {
 			this.physics.add.collider(this.player, colisionLayer);
 		}
 		this.camera.startFollow(this.player, true, 0.1, 0.1);
+
+		// Interaction key (F)
+		this.interactKey = this.input.keyboard?.addKey(
+			Phaser.Input.Keyboard.KeyCodes.F,
+		);
+
+		// Read centrifugadora object layer and create prompt texts (hidden by default)
+		const centrifLayer = this.map.getObjectLayer("centrifugadora");
+		if (centrifLayer?.objects) {
+			for (const obj of centrifLayer.objects) {
+				const centerX = (obj.x ?? 0) + (obj.width ? obj.width / 2 : 0);
+				const centerY = (obj.y ?? 0) + (obj.height ? obj.height / 2 : 0);
+				this.centrifCenters.push({ x: centerX, y: centerY });
+				const txt = this.add
+					.text(centerX, centerY - 20, "Press F", {
+						fontFamily: "Arial",
+						fontSize: "12px",
+						color: "#ffffff",
+						backgroundColor: "rgba(0,0,0,0.6)",
+					})
+					.setOrigin(0.5)
+					.setDepth(200)
+					.setVisible(false);
+				this.centrifTexts.push(txt);
+			}
+		}
 
 		this.anims.create({
 			key: "player-walk-down",
@@ -199,6 +238,33 @@ export class Game extends Phaser.Scene {
 				default:
 					this.player.setFrame(0);
 					break;
+			}
+		}
+
+		// Show/hide centrifugadora prompts when player is near and handle F
+		if (this.centrifTexts.length > 0) {
+			const px = this.player.x;
+			const py = this.player.y;
+			let anyVisible = false;
+			for (let index = 0; index < this.centrifTexts.length; index += 1) {
+				const txt = this.centrifTexts[index];
+				const center = this.centrifCenters[index];
+				const dx = px - center.x;
+				const dy = py - center.y;
+				const dist = Math.sqrt(dx * dx + dy * dy);
+				const visible = dist < 72;
+				txt.setVisible(visible);
+				if (visible) {
+					anyVisible = true;
+				}
+			}
+
+			if (
+				anyVisible &&
+				this.interactKey &&
+				Phaser.Input.Keyboard.JustDown(this.interactKey)
+			) {
+				EventBus.emit("centrif:interact");
 			}
 		}
 	}
