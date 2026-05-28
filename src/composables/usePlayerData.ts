@@ -1,17 +1,20 @@
 import { ref } from "vue";
+import type { InventoryEntry, InventoryStack } from "../items";
+import { normalizeEntry } from "../items";
 
 export type SaveData = {
 	saveVersion: number;
 	level: number;
 	coins: number;
-	inventory: Array<string | null>;
-	backpack?: Array<string | null>;
+	inventory: InventoryEntry[];
+	backpack?: InventoryEntry[];
+	juiceSlots?: InventoryEntry[];
 	selectedSlot: number;
 	plotUnlocks?: boolean[];
 };
 
 export const STORAGE_KEY = "juice-save-v1";
-const SAVE_VERSION = 3;
+const SAVE_VERSION = 4;
 
 const DEFAULT_PLOTS = [
 	{ name: "South Field", size: "15 tiles", cost: 0 },
@@ -22,14 +25,17 @@ const DEFAULT_PLOTS = [
 export const usePlayerData = () => {
 	const level = ref(1);
 	const coins = ref(0);
-	const inventory = ref<Array<string | null>>([null, null, null, null, null]);
-	const backpack = ref<Array<string | null>>(
+	const inventory = ref<Array<InventoryStack | null>>([null, null, null, null, null]);
+	const backpack = ref<Array<InventoryStack | null>>(
 		Array.from({ length: 15 }, () => null),
 	);
 	const inventoryIndex = ref(0);
 	const plotUnlocks = ref<boolean[]>([true, false, false]);
-	const sellSlots = ref<Array<string | null>>(
+	const sellSlots = ref<Array<InventoryStack | null>>(
 		Array.from({ length: 6 }, () => null),
+	);
+	const juiceSlots = ref<Array<InventoryStack | null>>(
+		Array.from({ length: 7 }, () => null),
 	);
 	const hasSave = ref(false);
 	const farmPlots = DEFAULT_PLOTS;
@@ -38,10 +44,13 @@ export const usePlayerData = () => {
 		level.value = data.level ?? 1;
 		coins.value = data.coins ?? 0;
 		inventory.value = Array.from({ length: 5 }, (_, index) => {
-			return data.inventory?.[index] ?? null;
+			return normalizeEntry(data.inventory?.[index] ?? null);
 		});
 		backpack.value = Array.from({ length: 15 }, (_, index) => {
-			return data.backpack?.[index] ?? null;
+			return normalizeEntry(data.backpack?.[index] ?? null);
+		});
+		juiceSlots.value = Array.from({ length: 7 }, (_, index) => {
+			return normalizeEntry(data.juiceSlots?.[index] ?? null);
 		});
 		inventoryIndex.value = Math.min(Math.max(data.selectedSlot ?? 0, 0), 4);
 		if (data.plotUnlocks && data.plotUnlocks.length === farmPlots.length) {
@@ -59,6 +68,7 @@ export const usePlayerData = () => {
 			coins: coins.value,
 			inventory: inventory.value,
 			backpack: backpack.value,
+			juiceSlots: juiceSlots.value,
 			selectedSlot: inventoryIndex.value,
 			plotUnlocks: plotUnlocks.value,
 		};
@@ -74,9 +84,12 @@ export const usePlayerData = () => {
 		const saved = localStorage.getItem(STORAGE_KEY);
 		if (saved) {
 			const parsed = JSON.parse(saved) as SaveData;
-			if (parsed.saveVersion === SAVE_VERSION) {
+			if (parsed.saveVersion <= SAVE_VERSION) {
 				applySave(parsed);
 				hasSave.value = true;
+				if (parsed.saveVersion !== SAVE_VERSION) {
+					saveState();
+				}
 				return;
 			}
 		}
@@ -113,13 +126,13 @@ export const usePlayerData = () => {
 		saveState();
 	};
 
-	const setInventorySlot = (slotIndex: number, item: string | null) => {
+	const setInventorySlot = (slotIndex: number, item: InventoryEntry) => {
 		if (slotIndex < 0 || slotIndex > 4) {
 			return;
 		}
 
 		const next = inventory.value.slice();
-		next[slotIndex] = item;
+		next[slotIndex] = normalizeEntry(item);
 		inventory.value = next;
 		saveState();
 	};
@@ -163,6 +176,7 @@ export const usePlayerData = () => {
 		inventoryIndex,
 		plotUnlocks,
 		sellSlots,
+		juiceSlots,
 		hasSave,
 		farmPlots,
 		applySave,

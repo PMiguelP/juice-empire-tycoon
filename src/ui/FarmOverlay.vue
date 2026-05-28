@@ -6,6 +6,7 @@ defineProps({
     coins: { type: Number, required: true },
     isPlotUnlocked: { type: Function, required: true },
     canUnlockPlot: { type: Function, required: true },
+    labels: { type: Object, required: true },
 });
 const emit = defineEmits(["close", "select-plot", "unlock-plot"]);
 
@@ -21,11 +22,11 @@ const unlockPlot = (index) => {
 <template>
     <div class="farm-overlay" :class="{ 'is-open': open }">
         <div class="farm-scrim"></div>
-        <div class="farm-panel" role="dialog" aria-label="Farm map">
+        <div class="farm-panel" role="dialog" :aria-label="labels.title">
             <div class="farm-header">
                 <div>
-                    <div class="farm-title">Farm Map</div>
-                    <div class="farm-subtitle">Manage your plots</div>
+                    <div class="farm-title">{{ labels.title }}</div>
+                    <div class="farm-subtitle">{{ labels.subtitle }}</div>
                 </div>
                 <button
                     class="farm-close"
@@ -38,7 +39,7 @@ const unlockPlot = (index) => {
             </div>
             <div class="farm-content">
                 <div class="farm-nav">
-                    <div class="farm-nav-title">My Farm</div>
+                    <div class="farm-nav-title">{{ labels.myFarm }}</div>
                     <button
                         v-for="(plot, index) in farmPlots"
                         :key="plot.name"
@@ -49,7 +50,7 @@ const unlockPlot = (index) => {
                     >
                         <span class="farm-nav-name">{{ plot.name }}</span>
                         <span class="farm-nav-meta">
-                            {{ isPlotUnlocked(index) ? "Unlocked" : "Locked" }}
+                            {{ isPlotUnlocked(index) ? labels.unlocked : labels.locked }}
                         </span>
                     </button>
                 </div>
@@ -73,18 +74,18 @@ const unlockPlot = (index) => {
                         {{ farmPlots[selectedPlotIndex].name }}
                     </div>
                     <div class="farm-detail-meta">
-                        Plot size: {{ farmPlots[selectedPlotIndex].size }}
+                        {{ labels.plotSize }}: {{ farmPlots[selectedPlotIndex].size }}
                     </div>
                     <div class="farm-detail-meta">
-                        Status:
+                        {{ labels.status }}:
                         {{
                             isPlotUnlocked(selectedPlotIndex)
-                                ? "Unlocked"
-                                : "Locked"
+                                ? labels.unlocked
+                                : labels.locked
                         }}
                     </div>
                     <div class="farm-detail-meta">
-                        Available coins: {{ coins }}
+                        {{ labels.availableCoins }}: {{ coins }}
                     </div>
                     <div class="farm-detail-actions">
                         <button
@@ -95,15 +96,14 @@ const unlockPlot = (index) => {
                         >
                             {{
                                 isPlotUnlocked(selectedPlotIndex)
-                                    ? "Ready"
-                                    : `Unlock for ${farmPlots[selectedPlotIndex].cost} coins`
+                                    ? labels.ready
+                                    : labels.unlockFor(farmPlots[selectedPlotIndex].cost)
                             }}
                         </button>
                     </div>
-                    <div class="farm-detail-note">Press K to close.</div>
+                    <div class="farm-detail-note">{{ labels.closeHint }}</div>
                 </div>
             </div>
         </div>
     </div>
 </template>
-

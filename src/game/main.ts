@@ -1,8 +1,6 @@
 import Phaser from "phaser";
 import { Boot } from "./scenes/Boot";
 import { Game as MainGame } from "./scenes/Game";
-import { GameOver } from "./scenes/GameOver";
-import { MainMenu } from "./scenes/MainMenu";
 import { Preloader } from "./scenes/Preloader";
 
 // Find out more information about the Game Config at:
@@ -27,7 +25,7 @@ const config: Phaser.Types.Core.GameConfig = {
 		mode: Phaser.Scale.RESIZE,
 		autoCenter: Phaser.Scale.CENTER_BOTH,
 	},
-	scene: [Boot, Preloader, MainMenu, MainGame, GameOver],
+	scene: [Boot, Preloader, MainGame],
 };
 
 const StartGame = (parent: string) => {

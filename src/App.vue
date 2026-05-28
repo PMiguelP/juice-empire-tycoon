@@ -1,45 +1,51 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from "vue";
+import { computed, onMounted, onUnmounted, ref } from "vue";
 import { EventBus } from "./game/EventBus";
 import PhaserGame from "./PhaserGame.vue";
 import { STORAGE_KEY, usePlayerData } from "./composables/usePlayerData";
 import type { SaveData } from "./composables/usePlayerData";
+import { useLanguage } from "./i18n";
+import type { Language } from "./i18n";
+import { getItemVisual } from "./items";
+import { getItemQuantity, getMaxStack, getItemId } from "./items";
+import type { InventoryEntry } from "./items";
 import { useShop } from "./composables/useShop";
 import { useSell } from "./composables/useSell";
 import { useDragAndDrop } from "./composables/useDragAndDrop";
 import { useInputManager } from "./composables/useInputManager";
+import MainMenuOverlay from "./ui/MainMenuOverlay.vue";
 import HudOverlay from "./ui/HudOverlay.vue";
 import RadialOverlay from "./ui/RadialOverlay.vue";
 import FarmOverlay from "./ui/FarmOverlay.vue";
 import InventoryOverlay from "./ui/InventoryOverlay.vue";
 import ShopOverlay from "./ui/ShopOverlay.vue";
 import SellOverlay from "./ui/SellOverlay.vue";
+import JuiceOverlay from "./ui/JuiceOverlay.vue";
 import PauseOverlay from "./ui/PauseOverlay.vue";
 
 const fileInputRef = ref<HTMLInputElement | null>(null);
 
+const mainMenuOpen = ref(true);
 const menuOpen = ref(false);
-const pauseMenuOpen = ref(true);
-const menuMode = ref<"main" | "pause">("main");
+const pauseMenuOpen = ref(false);
+const menuMode = ref<"main" | "pause">("pause");
 const farmMenuOpen = ref(false);
 const inventoryMenuOpen = ref(false);
 const shopMenuOpen = ref(false);
 const sellMenuOpen = ref(false);
+const juiceMenuOpen = ref(false);
 
 const activeIndex = ref(0);
 const selectedPlotIndex = ref(0);
+const selectedRecipeIndex = ref(0);
 const selectedBackpackIndex = ref<number | null>(null);
 
-const menuItems = [
-    { label: "Plant", description: "Place seeds on tilled soil" },
-    { label: "Harvest", description: "Collect ready crops" },
-    { label: "Water", description: "Water nearby soil" },
-    { label: "Seed", description: "Select seed type" },
-    { label: "Fertilize", description: "Boost growth speed" },
-    { label: "Till", description: "Prepare soil for planting" },
-    { label: "Craft", description: "Build simple items" },
-    { label: "Cook", description: "Turn crops into meals" },
-];
+const { language, text, setLanguage, itemLabel } = useLanguage();
+const itemVisual = getItemVisual;
+const itemQuantity = getItemQuantity;
+const itemMax = (item: InventoryEntry) => getMaxStack(getItemId(item));
+const menuItems = computed(() => text.value.radial.items);
+const juiceRecipes = computed(() => text.value.juice.recipesList);
 
 const {
     level,
@@ -48,6 +54,7 @@ const {
     backpack,
     inventoryIndex,
     sellSlots,
+    juiceSlots,
     hasSave,
     farmPlots,
     applySave,
@@ -64,6 +71,14 @@ const {
     canUnlockPlot,
 } = usePlayerData();
 
+const localizedFarmPlots = computed(() => {
+    return farmPlots.map((plot, index) => ({
+        ...plot,
+        name: text.value.farm.plots[index]?.name ?? plot.name,
+        size: text.value.farm.plots[index]?.size ?? plot.size,
+    }));
+});
+
 const { shopItems, buyItem } = useShop(
     coins,
     backpack,
@@ -71,14 +86,18 @@ const { shopItems, buyItem } = useShop(
     saveState,
 );
 const { getSellPrice, sellItems } = useSell(coins, sellSlots, saveState);
-const { handleDragStart, handleDragEnd, handleDrop } = useDragAndDrop(
+const { handleDragStart, handleShopDragStart, handleDragEnd, handleDrop } =
+    useDragAndDrop(
     backpack,
     inventory,
     sellSlots,
+    juiceSlots,
+    coins,
     saveState,
 );
 
 const { attach, detach } = useInputManager({
+    mainMenuOpen,
     menuOpen,
     pauseMenuOpen,
     menuMode,
@@ -86,6 +105,7 @@ const { attach, detach } = useInputManager({
     inventoryMenuOpen,
     shopMenuOpen,
     sellMenuOpen,
+    juiceMenuOpen,
     selectedBackpackIndex,
     inventoryIndex,
     hasSave,
@@ -104,6 +124,10 @@ const selectPlot = (index: number) => {
 
 const selectBackpackSlot = (index: number) => {
     selectedBackpackIndex.value = index;
+};
+
+const selectRecipe = (index: number) => {
+    selectedRecipeIndex.value = index;
 };
 
 const assignToQuickbar = (slotIndex: number) => {
@@ -172,6 +196,15 @@ const closeMenu = () => {
     }
 };
 
+const startGame = () => {
+    mainMenuOpen.value = false;
+    menuMode.value = "pause";
+};
+
+const chooseLanguage = (nextLanguage: Language) => {
+    setLanguage(nextLanguage);
+};
+
 onMounted(() => {
     attach();
     void loadState();
@@ -204,25 +237,40 @@ onUnmounted(() => {
             accept="application/json"
             @change="handleFileChange"
         />
+        <MainMenuOverlay
+            :open="mainMenuOpen"
+            :language="language"
+            :text="text"
+            :has-save="hasSave"
+            @start="startGame"
+            @set-language="chooseLanguage"
+        />
         <HudOverlay
             :level="level"
             :coins="coins"
             :inventory="inventory"
             :inventory-index="inventoryIndex"
+            :labels="text.hud"
+            :item-label="itemLabel"
+            :item-visual="itemVisual"
+            :item-quantity="itemQuantity"
+            :item-max="itemMax"
         />
         <RadialOverlay
             :open="menuOpen"
             :menu-items="menuItems"
             :active-index="activeIndex"
+            :labels="text.radial"
             @set-active="setActive"
         />
         <FarmOverlay
             :open="farmMenuOpen"
-            :farm-plots="farmPlots"
+            :farm-plots="localizedFarmPlots"
             :selected-plot-index="selectedPlotIndex"
             :coins="coins"
             :is-plot-unlocked="isPlotUnlocked"
             :can-unlock-plot="canUnlockPlot"
+            :labels="text.farm"
             @close="farmMenuOpen = false"
             @select-plot="selectPlot"
             @unlock-plot="unlockPlot"
@@ -233,6 +281,11 @@ onUnmounted(() => {
             :inventory="inventory"
             :selected-backpack-index="selectedBackpackIndex"
             :inventory-index="inventoryIndex"
+            :labels="text.inventory"
+            :item-label="itemLabel"
+            :item-visual="itemVisual"
+            :item-quantity="itemQuantity"
+            :item-max="itemMax"
             @close="inventoryMenuOpen = false"
             @select-backpack="selectBackpackSlot"
             @assign-quickbar="assignToQuickbar"
@@ -248,8 +301,14 @@ onUnmounted(() => {
             :inventory="inventory"
             :selected-backpack-index="selectedBackpackIndex"
             :inventory-index="inventoryIndex"
+            :labels="text.shop"
+            :item-label="itemLabel"
+            :item-visual="itemVisual"
+            :item-quantity="itemQuantity"
+            :item-max="itemMax"
             @close="shopMenuOpen = false"
             @buy="buyItem"
+            @shop-drag-start="handleShopDragStart"
             @select-backpack="selectBackpackSlot"
             @assign-quickbar="assignToQuickbar"
             @drag-start="handleDragStart"
@@ -264,8 +323,35 @@ onUnmounted(() => {
             :selected-backpack-index="selectedBackpackIndex"
             :inventory-index="inventoryIndex"
             :get-sell-price="getSellPrice"
+            :labels="text.sell"
+            :item-label="itemLabel"
+            :item-visual="itemVisual"
+            :item-quantity="itemQuantity"
+            :item-max="itemMax"
             @close="sellMenuOpen = false"
             @sell-items="sellItems"
+            @select-backpack="selectBackpackSlot"
+            @assign-quickbar="assignToQuickbar"
+            @drag-start="handleDragStart"
+            @drag-end="handleDragEnd"
+            @drop="handleDrop"
+        />
+        <JuiceOverlay
+            :open="juiceMenuOpen"
+            :labels="text.juice"
+            :recipes="juiceRecipes"
+            :selected-recipe-index="selectedRecipeIndex"
+            :backpack="backpack"
+            :inventory="inventory"
+            :juice-slots="juiceSlots"
+            :selected-backpack-index="selectedBackpackIndex"
+            :inventory-index="inventoryIndex"
+            :item-label="itemLabel"
+            :item-visual="itemVisual"
+            :item-quantity="itemQuantity"
+            :item-max="itemMax"
+            @close="juiceMenuOpen = false"
+            @select-recipe="selectRecipe"
             @select-backpack="selectBackpackSlot"
             @assign-quickbar="assignToQuickbar"
             @drag-start="handleDragStart"
@@ -276,10 +362,12 @@ onUnmounted(() => {
             :open="pauseMenuOpen"
             :menu-mode="menuMode"
             :has-save="hasSave"
+            :labels="text.pause"
+            :language="language"
             @close="closeMenu"
+            @set-language="chooseLanguage"
             @save-download="saveAndDownload"
             @upload="openFilePicker"
         />
     </div>
 </template>
-const data = JSON.stringify(getSaveData(), null, 2);

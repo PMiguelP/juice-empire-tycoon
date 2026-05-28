@@ -1,22 +1,21 @@
 import type { Ref } from "vue";
+import type { InventoryStack } from "../items";
+import { ITEM_CATALOG, SHOP_ITEM_IDS } from "../items";
+import { addOneToSlots } from "../items";
 
 export type ShopItem = {
 	id: string;
-	name: string;
 	price: number;
 };
 
-const SHOP_ITEMS: ShopItem[] = [
-	{ id: "seed-bag", name: "Seed Bag", price: 50 },
-	{ id: "shovel", name: "Shovel", price: 150 },
-	{ id: "potion", name: "HP Potion", price: 75 },
-	{ id: "roasta", name: "Roasta", price: 10 },
-	{ id: "chappir", name: "Chappir", price: 50 },
-];
+const SHOP_ITEMS: ShopItem[] = SHOP_ITEM_IDS.map((id) => ({
+	id,
+	price: ITEM_CATALOG[id].price,
+}));
 
 export const useShop = (
 	coins: Ref<number>,
-	backpack: Ref<Array<string | null>>,
+	backpack: Ref<Array<InventoryStack | null>>,
 	selectedBackpackIndex: Ref<number | null>,
 	saveState: () => void,
 ) => {
@@ -25,22 +24,16 @@ export const useShop = (
 			return;
 		}
 
-		const preferredIndex = selectedBackpackIndex.value;
-		const nextBackpack = backpack.value.slice();
-		let targetIndex = -1;
-
-		if (preferredIndex !== null && !nextBackpack[preferredIndex]) {
-			targetIndex = preferredIndex;
-		} else {
-			targetIndex = nextBackpack.findIndex((slot) => !slot);
-		}
-
-		if (targetIndex < 0) {
+		const nextBackpack = addOneToSlots(
+			backpack.value,
+			itemId,
+			selectedBackpackIndex.value,
+		);
+		if (!nextBackpack) {
 			return;
 		}
 
 		coins.value -= price;
-		nextBackpack[targetIndex] = itemId;
 		backpack.value = nextBackpack;
 		saveState();
 	};

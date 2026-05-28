@@ -3,6 +3,7 @@ import type { Ref } from "vue";
 type MenuMode = "main" | "pause";
 
 type InputManagerOptions = {
+	mainMenuOpen?: Ref<boolean>;
 	menuOpen: Ref<boolean>;
 	pauseMenuOpen: Ref<boolean>;
 	menuMode: Ref<MenuMode>;
@@ -10,6 +11,7 @@ type InputManagerOptions = {
 	inventoryMenuOpen: Ref<boolean>;
 	shopMenuOpen: Ref<boolean>;
 	sellMenuOpen: Ref<boolean>;
+	juiceMenuOpen: Ref<boolean>;
 	selectedBackpackIndex: Ref<number | null>;
 	inventoryIndex: Ref<number>;
 	hasSave: Ref<boolean>;
@@ -20,6 +22,10 @@ type InputManagerOptions = {
 
 export const useInputManager = (options: InputManagerOptions) => {
 	const handleKey = (event: KeyboardEvent) => {
+		if (options.mainMenuOpen?.value) {
+			return;
+		}
+
 		if (event.code === "KeyE" && !event.repeat) {
 			options.menuOpen.value = !options.menuOpen.value;
 		}
@@ -30,6 +36,9 @@ export const useInputManager = (options: InputManagerOptions) => {
 				options.menuOpen.value = false;
 				options.pauseMenuOpen.value = false;
 				options.inventoryMenuOpen.value = false;
+				options.shopMenuOpen.value = false;
+				options.sellMenuOpen.value = false;
+				options.juiceMenuOpen.value = false;
 			}
 			return;
 		}
@@ -43,6 +52,7 @@ export const useInputManager = (options: InputManagerOptions) => {
 				options.farmMenuOpen.value = false;
 				options.shopMenuOpen.value = false;
 				options.sellMenuOpen.value = false;
+				options.juiceMenuOpen.value = false;
 			}
 			return;
 		}
@@ -59,6 +69,7 @@ export const useInputManager = (options: InputManagerOptions) => {
 				options.farmMenuOpen.value = false;
 				options.inventoryMenuOpen.value = false;
 				options.sellMenuOpen.value = false;
+				options.juiceMenuOpen.value = false;
 			}
 			return;
 		}
@@ -77,11 +88,31 @@ export const useInputManager = (options: InputManagerOptions) => {
 				options.farmMenuOpen.value = false;
 				options.inventoryMenuOpen.value = false;
 				options.shopMenuOpen.value = false;
+				options.juiceMenuOpen.value = false;
+			}
+			return;
+		}
+
+		if (event.code === "KeyJ" && !event.repeat) {
+			options.juiceMenuOpen.value = !options.juiceMenuOpen.value;
+			options.selectedBackpackIndex.value = null;
+			if (options.juiceMenuOpen.value) {
+				options.menuOpen.value = false;
+				options.pauseMenuOpen.value = false;
+				options.farmMenuOpen.value = false;
+				options.inventoryMenuOpen.value = false;
+				options.shopMenuOpen.value = false;
+				options.sellMenuOpen.value = false;
 			}
 			return;
 		}
 
 		if (event.code === "Escape") {
+			if (options.juiceMenuOpen.value) {
+				options.juiceMenuOpen.value = false;
+				options.selectedBackpackIndex.value = null;
+				return;
+			}
 			if (options.sellMenuOpen.value) {
 				options.sellMenuOpen.value = false;
 				options.selectedBackpackIndex.value = null;

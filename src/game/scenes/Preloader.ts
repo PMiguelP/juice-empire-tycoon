@@ -25,6 +25,7 @@ export class Preloader extends Phaser.Scene {
 		// ✅ ASSETS DO MAPA - ADICIONA ISTO!
 		this.load.tilemapTiledJSON("mapa", "teste.tmj");
 		this.load.tilemapTiledJSON("centrifugadora", "centrifugadora.tmj");
+		this.load.image("centrifugadora", "centrifugadora.jpg");
 		this.load.image("summer_outdoorsTileSheet", "summer_outdoorsTileSheet.png");
 		this.load.image(
 			"summer_outdoorsTileSheet2",

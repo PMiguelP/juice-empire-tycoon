@@ -6,7 +6,9 @@ export class Game extends Phaser.Scene {
 	map: Phaser.Tilemaps.Tilemap | null = null;
 	player?: Phaser.Physics.Arcade.Sprite;
 	interactKey?: Phaser.Input.Keyboard.Key;
-	centrifTexts: Phaser.GameObjects.Text[] = [];
+	currentMapKey = "mapa";
+	returnSpawn: { x: number; y: number } | null = null;
+	centrifTexts: Phaser.GameObjects.Container[] = [];
 	centrifCenters: { x: number; y: number }[] = [];
 	wasd?: {
 		up: Phaser.Input.Keyboard.Key;
@@ -21,56 +23,53 @@ export class Game extends Phaser.Scene {
 		super("Game");
 	}
 
-	create() {
+	create(data?: {
+		mapKey?: string;
+		spawnX?: number;
+		spawnY?: number;
+		returnSpawnX?: number;
+		returnSpawnY?: number;
+	}) {
 		this.camera = this.cameras.main;
 		this.camera.setBackgroundColor(0x88c070);
+		this.currentMapKey = data?.mapKey ?? "mapa";
+		this.returnSpawn =
+			typeof data?.returnSpawnX === "number" &&
+			typeof data?.returnSpawnY === "number"
+				? { x: data.returnSpawnX, y: data.returnSpawnY }
+				: null;
+		this.centrifTexts = [];
+		this.centrifCenters = [];
 
 		// Criar o mapa
-		this.map = this.make.tilemap({ key: "mapa" });
+		this.map = this.make.tilemap({ key: this.currentMapKey });
 
-		// ✅ Usar os nomes EXATOS do JSON (sem "2")
-		const tileset1 = this.map.addTilesetImage(
-			"summer_outdoorsTileSheet", // ← SEM o "2"
-			"summer_outdoorsTileSheet",
-		);
-		const tileset1b = this.map.addTilesetImage(
-			"summer_outdoorsTileSheet2",
-			"summer_outdoorsTileSheet2",
-		);
-		const tileset2 = this.map.addTilesetImage(
-			"fall_Waterfalls",
-			"fall_Waterfalls",
-		);
-		const tileset3 = this.map.addTilesetImage("Barn", "Barn");
-		const tileset4 = this.map.addTilesetImage("image", "image");
-		const tileset5 = this.map.addTilesetImage("Well", "Well");
-		const tileset6 = this.map.addTilesetImage("player", "player");
+		const tilesetImageKeys: Record<string, string> = {
+			summer_outdoorsTileSheet: "summer_outdoorsTileSheet",
+			summer_outdoorsTileSheet2: "summer_outdoorsTileSheet2",
+			fall_Waterfalls: "fall_Waterfalls",
+			Barn: "Barn",
+			image: "image",
+			Well: "Well",
+			player: "player",
+			centrifugadora: "centrifugadora",
+		};
 
-		// Filtrar nulls
-		const allTilesets = [
-			tileset1,
-			tileset1b,
-			tileset2,
-			tileset3,
-			tileset4,
-			tileset5,
-			tileset6,
-		].filter((t): t is Phaser.Tilemaps.Tileset => t !== null);
+		const allTilesets = this.map.tilesets
+			.map((ts) => {
+				const textureKey = tilesetImageKeys[ts.name] ?? ts.name;
+				return this.map?.addTilesetImage(ts.name, textureKey) ?? null;
+			})
+			.filter((t): t is Phaser.Tilemaps.Tileset => t !== null);
 
-		const layerOrder = [
-			"ground",
-			"water",
-			"poco",
-			"cliffs",
-			"buildings",
-			"trees",
-			"objects",
-			"colision",
-		];
-		const createdLayers = layerOrder.map(
-			(layerName) => this.map?.createLayer(layerName, allTilesets) ?? null,
-		);
-		const colisionLayer = createdLayers[layerOrder.indexOf("colision")];
+		const createdLayers = this.map.layers
+			.map((layer) => this.map?.createLayer(layer.name, allTilesets) ?? null)
+			.filter((layer): layer is Phaser.Tilemaps.TilemapLayer => layer !== null);
+
+		const colisionLayer =
+			createdLayers.find((layer) => layer.layer.name === "colision") ??
+			createdLayers.find((layer) => layer.layer.name === "collision") ??
+			null;
 
 		// Esconder a layer de colisão
 		if (colisionLayer) {
@@ -92,11 +91,17 @@ export class Game extends Phaser.Scene {
 		// Spawn player at `playerSpawn` object if available, otherwise center
 		let spawnX = mapWidth / 2;
 		let spawnY = mapHeight / 2;
-		const spawnLayer = this.map.getObjectLayer("playerSpawn");
+		const spawnLayer =
+			this.map.getObjectLayer("playerSpawn") ??
+			this.map.getObjectLayer("spawn");
 		if (spawnLayer?.objects?.length) {
 			const obj = spawnLayer.objects[0] as Phaser.Types.Tilemaps.TiledObject;
 			spawnX = (obj.x ?? spawnX) + (obj.width ? obj.width / 2 : 0);
 			spawnY = (obj.y ?? spawnY) + (obj.height ? obj.height / 2 : 0);
+		}
+		if (typeof data?.spawnX === "number" && typeof data?.spawnY === "number") {
+			spawnX = data.spawnX;
+			spawnY = data.spawnY;
 		}
 
 		this.player = this.physics.add
@@ -112,63 +117,64 @@ export class Game extends Phaser.Scene {
 			Phaser.Input.Keyboard.KeyCodes.F,
 		);
 
-		// Read centrifugadora object layer and create prompt texts (hidden by default)
-		const centrifLayer = this.map.getObjectLayer("centrifugadora");
-		if (centrifLayer?.objects) {
-			for (const obj of centrifLayer.objects) {
+		// Build interaction prompts from object layers, depending on the active map
+		const interactionLayerName =
+			this.currentMapKey === "centrifugadora" ? "spawn" : "centrifugadora";
+		const interactionLayer = this.map.getObjectLayer(interactionLayerName);
+		if (interactionLayer?.objects) {
+			for (const obj of interactionLayer.objects) {
 				const centerX = (obj.x ?? 0) + (obj.width ? obj.width / 2 : 0);
 				const centerY = (obj.y ?? 0) + (obj.height ? obj.height / 2 : 0);
 				this.centrifCenters.push({ x: centerX, y: centerY });
-				const txt = this.add
-					.text(centerX, centerY - 20, "Press F", {
-						fontFamily: "Arial",
-						fontSize: "12px",
-						color: "#ffffff",
-						backgroundColor: "rgba(0,0,0,0.6)",
-					})
-					.setOrigin(0.5)
-					.setDepth(200)
-					.setVisible(false);
+				const txt = this.createInteractionPrompt(centerX, centerY - 22);
 				this.centrifTexts.push(txt);
 			}
 		}
 
-		this.anims.create({
-			key: "player-walk-down",
-			frames: this.anims.generateFrameNumbers("player", {
-				start: 0,
-				end: 3,
-			}),
-			frameRate: 8,
-			repeat: -1,
-		});
-		this.anims.create({
-			key: "player-walk-left",
-			frames: this.anims.generateFrameNumbers("player", {
-				start: 12,
-				end: 15,
-			}),
-			frameRate: 8,
-			repeat: -1,
-		});
-		this.anims.create({
-			key: "player-walk-right",
-			frames: this.anims.generateFrameNumbers("player", {
-				start: 4,
-				end: 7,
-			}),
-			frameRate: 8,
-			repeat: -1,
-		});
-		this.anims.create({
-			key: "player-walk-up",
-			frames: this.anims.generateFrameNumbers("player", {
-				start: 8,
-				end: 11,
-			}),
-			frameRate: 8,
-			repeat: -1,
-		});
+		if (!this.anims.exists("player-walk-down")) {
+			this.anims.create({
+				key: "player-walk-down",
+				frames: this.anims.generateFrameNumbers("player", {
+					start: 0,
+					end: 3,
+				}),
+				frameRate: 8,
+				repeat: -1,
+			});
+		}
+		if (!this.anims.exists("player-walk-left")) {
+			this.anims.create({
+				key: "player-walk-left",
+				frames: this.anims.generateFrameNumbers("player", {
+					start: 12,
+					end: 15,
+				}),
+				frameRate: 8,
+				repeat: -1,
+			});
+		}
+		if (!this.anims.exists("player-walk-right")) {
+			this.anims.create({
+				key: "player-walk-right",
+				frames: this.anims.generateFrameNumbers("player", {
+					start: 4,
+					end: 7,
+				}),
+				frameRate: 8,
+				repeat: -1,
+			});
+		}
+		if (!this.anims.exists("player-walk-up")) {
+			this.anims.create({
+				key: "player-walk-up",
+				frames: this.anims.generateFrameNumbers("player", {
+					start: 8,
+					end: 11,
+				}),
+				frameRate: 8,
+				repeat: -1,
+			});
+		}
 
 		this.wasd = this.input.keyboard?.addKeys({
 			up: Phaser.Input.Keyboard.KeyCodes.W,
@@ -246,6 +252,8 @@ export class Game extends Phaser.Scene {
 			const px = this.player.x;
 			const py = this.player.y;
 			let anyVisible = false;
+			let nearestVisibleCenter: { x: number; y: number } | null = null;
+			let nearestDistance = Number.POSITIVE_INFINITY;
 			for (let index = 0; index < this.centrifTexts.length; index += 1) {
 				const txt = this.centrifTexts[index];
 				const center = this.centrifCenters[index];
@@ -256,6 +264,10 @@ export class Game extends Phaser.Scene {
 				txt.setVisible(visible);
 				if (visible) {
 					anyVisible = true;
+					if (dist < nearestDistance) {
+						nearestDistance = dist;
+						nearestVisibleCenter = center;
+					}
 				}
 			}
 
@@ -264,12 +276,60 @@ export class Game extends Phaser.Scene {
 				this.interactKey &&
 				Phaser.Input.Keyboard.JustDown(this.interactKey)
 			) {
+				if (this.currentMapKey !== "centrifugadora") {
+					this.scene.restart({
+						mapKey: "centrifugadora",
+						returnSpawnX: nearestVisibleCenter?.x,
+						returnSpawnY: nearestVisibleCenter?.y,
+					});
+				} else {
+					this.scene.restart({
+						mapKey: "mapa",
+						spawnX: this.returnSpawn?.x,
+						spawnY: this.returnSpawn?.y,
+					});
+				}
 				EventBus.emit("centrif:interact");
 			}
 		}
 	}
 
-	changeScene() {
-		this.scene.start("GameOver");
+	private createInteractionPrompt(
+		x: number,
+		y: number,
+	): Phaser.GameObjects.Container {
+		const badge = this.add.graphics();
+		badge.fillStyle(0x0f131b, 0.9);
+		badge.lineStyle(1, 0x5d6577, 0.95);
+		badge.fillRoundedRect(-54, -15, 108, 30, 10);
+		badge.strokeRoundedRect(-54, -15, 108, 30, 10);
+		badge.fillStyle(0xf9c74f, 0.95);
+		badge.fillRoundedRect(-47, -10, 20, 20, 6);
+
+		const keyText = this.add
+			.text(-37, 0, "F", {
+				fontFamily: '"Press Start 2P", monospace',
+				fontSize: "9px",
+				color: "#1f1600",
+			})
+			.setOrigin(0.5);
+
+		const label = this.add
+			.text(6, 0, "INTERACT", {
+				fontFamily: '"Press Start 2P", monospace',
+				fontSize: "8px",
+				color: "#f7fafc",
+				stroke: "#0b0f16",
+				strokeThickness: 2,
+			})
+			.setOrigin(0.5);
+
+		const container = this.add
+			.container(x, y, [badge, keyText, label])
+			.setDepth(200)
+			.setVisible(false);
+
+		container.setAlpha(0.95);
+		return container;
 	}
 }
