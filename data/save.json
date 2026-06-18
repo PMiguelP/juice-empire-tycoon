@@ -1,0 +1,45 @@
+{
+  "saveVersion": 10,
+  "level": 28,
+  "xp": 0,
+  "coins": 130,
+  "inventory": [
+    null,
+    null,
+    null,
+    null,
+    null
+  ],
+  "selectedSlot": 0,
+  "backpack": [
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null
+  ],
+  "plotUnlocks": [
+    true,
+    false,
+    false,
+    false
+  ],
+  "farmTrees": [],
+  "playerState": {
+    "mapKey": "mapa",
+    "x": 624,
+    "y": 624,
+    "returnSpawnX": null,
+    "returnSpawnY": null
+  }
+}
