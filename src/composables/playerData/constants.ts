@@ -1,5 +1,6 @@
 export const STORAGE_KEY = "juice-save-v1";
-export const SAVE_VERSION = 14;
+export const SAVE_VERSION = 15;
+export const STARTING_COINS = 150;
 export const PLANT_XP_REWARD = 10;
 export const HARVEST_XP_REWARD = 15;
 export const JUICE_XP_REWARD = 25;

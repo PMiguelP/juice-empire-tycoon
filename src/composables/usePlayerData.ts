@@ -5,6 +5,7 @@ import {
 	DAY_START_MINUTE,
 	DEFAULT_PLOTS,
 	SAVE_VERSION,
+	STARTING_COINS,
 	STORAGE_KEY,
 } from "./playerData/constants";
 import {
@@ -51,7 +52,7 @@ export {
 export const usePlayerData = () => {
 	const level = ref(1);
 	const xp = ref(0);
-	const coins = ref(0);
+	const coins = ref(STARTING_COINS);
 	const completedContracts = ref(0);
 	const missedContracts = ref(0);
 	const inventory = ref<Array<InventoryStack | null>>([null, null, null, null, null]);
@@ -81,10 +82,23 @@ export const usePlayerData = () => {
 	const xpForNextLevel = computed(() => getXpForNextLevel(level.value));
 	const levelProgress = computed(() => getLevelProgress(xp.value, level.value));
 
+	const getCoinsFromSave = (data: SaveData) => {
+		const savedCoins = Math.max(0, Math.floor(data.coins ?? STARTING_COINS));
+		const savedLevel = data.level ?? 1;
+		const savedXp = Math.max(0, Math.floor(data.xp ?? 0));
+		const isOldEmptyStart =
+			(data.saveVersion ?? 0) < SAVE_VERSION &&
+			savedLevel === 1 &&
+			savedXp === 0 &&
+			savedCoins === 0;
+
+		return isOldEmptyStart ? STARTING_COINS : savedCoins;
+	};
+
 	const applySave = (data: SaveData) => {
 		level.value = data.level ?? 1;
 		xp.value = Math.max(0, Math.floor(data.xp ?? 0));
-		coins.value = data.coins ?? 0;
+		coins.value = getCoinsFromSave(data);
 		completedContracts.value = Math.max(0, Math.floor(data.completedContracts ?? 0));
 		missedContracts.value = Math.max(0, Math.floor(data.missedContracts ?? 0));
 		inventory.value = Array.from({ length: 5 }, (_, index) => {
@@ -177,7 +191,7 @@ export const usePlayerData = () => {
 		hasExistingSave.value = false;
 
 		try {
-			const response = await fetch("/data/save.json");
+			const response = await fetch(`${import.meta.env.BASE_URL}data/save.json`);
 			if (!response.ok) {
 				return;
 			}

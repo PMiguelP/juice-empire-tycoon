@@ -185,6 +185,17 @@ body {
     border-radius: 999px;
     background: rgba(255, 255, 255, 0.12);
     box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.45);
+    opacity: 0;
+    transform: translateY(-4px) scaleX(0.92);
+    transform-origin: center;
+    transition:
+        opacity 180ms ease,
+        transform 180ms ease;
+}
+
+.hud-level.is-progress-visible .hud-level-progress {
+    opacity: 1;
+    transform: translateY(0) scaleX(1);
 }
 
 .hud-level-progress span {

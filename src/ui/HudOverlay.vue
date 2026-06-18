@@ -5,6 +5,7 @@ import ItemIcon from "./ItemIcon.vue";
 const props = defineProps({
     level: { type: Number, required: true },
     levelProgress: { type: Number, default: 1 },
+    showLevelProgress: { type: Boolean, default: false },
     coins: { type: Number, required: true },
     inventory: { type: Array, required: true },
     inventoryIndex: { type: Number, required: true },
@@ -35,7 +36,10 @@ const isChargedSprayer = (entry) => {
 <template>
     <div class="hud" aria-hidden="true">
         <div class="hud-top">
-            <div class="hud-level">
+            <div
+                class="hud-level"
+                :class="{ 'is-progress-visible': showLevelProgress }"
+            >
                 <div class="hud-level-main">
                     <span class="hud-level-label">{{ labels.level }}</span>
                     <span class="hud-level-value">{{ level }}</span>

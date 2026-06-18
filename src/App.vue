@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, onUnmounted, ref, watch } from "vue";
 import PhaserGame from "./PhaserGame.vue";
 import {
     JUICE_XP_REWARD,
@@ -48,6 +48,8 @@ import SulfateMixer from "./ui/minigames/SulfateMixer.vue";
 
 const saveLoaded = ref(false);
 const gameReady = ref(false);
+const showLevelProgress = ref(false);
+let levelProgressTimer: number | null = null;
 
 const { language, text, setLanguage, itemLabel } = useLanguage();
 const { toastMessage, showToast } = useToast();
@@ -399,6 +401,30 @@ watch(selectedItemId, (itemId) => {
         stopPointerPlanting();
     }
 });
+
+watch([level, levelProgress], ([nextLevel, nextProgress], [previousLevel, previousProgress]) => {
+    if (!gameReady.value || !saveLoaded.value) {
+        return;
+    }
+    if (nextLevel === previousLevel && Math.abs(nextProgress - previousProgress) < 0.001) {
+        return;
+    }
+
+    showLevelProgress.value = true;
+    if (levelProgressTimer !== null) {
+        window.clearTimeout(levelProgressTimer);
+    }
+    levelProgressTimer = window.setTimeout(() => {
+        showLevelProgress.value = false;
+        levelProgressTimer = null;
+    }, 3600);
+});
+
+onUnmounted(() => {
+    if (levelProgressTimer !== null) {
+        window.clearTimeout(levelProgressTimer);
+    }
+});
 </script>
 
 <template>
@@ -430,10 +456,11 @@ watch(selectedItemId, (itemId) => {
             @save-download="saveAndDownload"
             @upload="openFilePicker"
         />
-        <HudOverlay
+            <HudOverlay
             v-if="gameReady"
             :level="level"
             :level-progress="levelProgress"
+            :show-level-progress="showLevelProgress"
             :coins="coins"
             :inventory="inventory"
             :inventory-index="inventoryIndex"
