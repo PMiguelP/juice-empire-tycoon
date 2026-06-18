@@ -20,40 +20,20 @@ export const useInventory = (
 	juiceSlots: Ref<SlotEntry[]>,
 	saveState: () => void,
 ) => {
+	const slotRefs: Record<SlotKind, Ref<SlotEntry[]>> = {
+		backpack,
+		quickbar: inventory,
+		storage,
+		sell: sellSlots,
+		juice: juiceSlots,
+	};
+
 	const getSlots = (kind: SlotKind) => {
-		if (kind === "backpack") {
-			return backpack.value;
-		}
-		if (kind === "quickbar") {
-			return inventory.value;
-		}
-		if (kind === "storage") {
-			return storage.value;
-		}
-		if (kind === "juice") {
-			return juiceSlots.value;
-		}
-		return sellSlots.value;
+		return slotRefs[kind].value;
 	};
 
 	const setSlots = (kind: SlotKind, items: SlotEntry[]) => {
-		if (kind === "backpack") {
-			backpack.value = items;
-			return;
-		}
-		if (kind === "quickbar") {
-			inventory.value = items;
-			return;
-		}
-		if (kind === "storage") {
-			storage.value = items;
-			return;
-		}
-		if (kind === "juice") {
-			juiceSlots.value = items;
-			return;
-		}
-		sellSlots.value = items;
+		slotRefs[kind].value = items;
 	};
 
 	const placeIntoSlot = (

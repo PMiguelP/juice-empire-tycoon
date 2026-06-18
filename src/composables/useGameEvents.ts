@@ -33,6 +33,7 @@ type GameEventHandlers = {
 	openJuiceMenu: () => void;
 	openBarnChest: () => void;
 	openContractsMenu: () => void;
+	openWaterMinigame: () => void;
 	handlePointerPlantRequest: (payload: PointerPlantPayload) => void;
 	loadInitialState: () => void | Promise<void>;
 };
@@ -59,6 +60,7 @@ export const useGameEvents = (handlers: GameEventHandlers) => {
 		EventBus.on("ui:open-juice", handlers.openJuiceMenu);
 		EventBus.on("ui:open-barn-chest", handlers.openBarnChest);
 		EventBus.on("ui:open-contracts", handlers.openContractsMenu);
+		EventBus.on("ui:open-water", handlers.openWaterMinigame);
 		EventBus.on("ui:plant-at-pointer", handlers.handlePointerPlantRequest);
 	};
 
@@ -81,6 +83,7 @@ export const useGameEvents = (handlers: GameEventHandlers) => {
 		EventBus.off("ui:open-juice", handlers.openJuiceMenu);
 		EventBus.off("ui:open-barn-chest", handlers.openBarnChest);
 		EventBus.off("ui:open-contracts", handlers.openContractsMenu);
+		EventBus.off("ui:open-water", handlers.openWaterMinigame);
 		EventBus.off("ui:plant-at-pointer", handlers.handlePointerPlantRequest);
 	};
 

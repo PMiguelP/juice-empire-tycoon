@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onUnmounted, ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 import PhaserGame from "./PhaserGame.vue";
 import {
     JUICE_XP_REWARD,
@@ -33,23 +33,15 @@ import { useMinigameActions } from "./composables/useMinigameActions";
 import { useGameLoop } from "./composables/useGameLoop";
 import { usePointerPlanting } from "./composables/usePointerPlanting";
 import { useAppSelectionState } from "./composables/useAppSelectionState";
+import { useLevelProgressToast } from "./composables/useLevelProgressToast";
 import GameMenuOverlay from "./ui/GameMenuOverlay.vue";
 import HudOverlay from "./ui/HudOverlay.vue";
 import RadialOverlay from "./ui/RadialOverlay.vue";
-import FarmOverlay from "./ui/FarmOverlay.vue";
-import InventoryOverlay from "./ui/InventoryOverlay.vue";
-import BarnChestOverlay from "./ui/BarnChestOverlay.vue";
-import ContractsOverlay from "./ui/ContractsOverlay.vue";
-import ShopOverlay from "./ui/ShopOverlay.vue";
-import SellOverlay from "./ui/SellOverlay.vue";
-import JuiceOverlay from "./ui/JuiceOverlay.vue";
-import WaterPipePuzzle from "./ui/minigames/WaterPipePuzzle.vue";
-import SulfateMixer from "./ui/minigames/SulfateMixer.vue";
+import GameOverlays from "./ui/GameOverlays.vue";
+import GameMinigames from "./ui/GameMinigames.vue";
 
 const saveLoaded = ref(false);
 const gameReady = ref(false);
-const showLevelProgress = ref(false);
-let levelProgressTimer: number | null = null;
 
 const { language, text, setLanguage, itemLabel } = useLanguage();
 const { toastMessage, showToast } = useToast();
@@ -183,6 +175,11 @@ const { rewardXp, handleHarvestAccepted } = useGameRewards({
     itemLabel,
     showToast,
 });
+const { showLevelProgress } = useLevelProgressToast(
+    level,
+    levelProgress,
+    computed(() => gameReady.value && saveLoaded.value),
+);
 
 const localizedFarmPlots = computed(() => {
     return farmPlots.map((plot, index) => ({
@@ -255,6 +252,7 @@ const { handleJuiceCraft } = useJuiceCraft({
 });
 const {
     selectedSulfateId,
+    requestWaterMinigame,
     requestSulfateMixer,
     closeWaterMinigame,
     closeSulfateMinigame,
@@ -358,6 +356,7 @@ useGameEvents({
     openJuiceMenu,
     openBarnChest,
     openContractsMenu,
+    openWaterMinigame: requestWaterMinigame,
     handlePointerPlantRequest,
     loadInitialState: async () => {
         await loadState();
@@ -402,29 +401,6 @@ watch(selectedItemId, (itemId) => {
     }
 });
 
-watch([level, levelProgress], ([nextLevel, nextProgress], [previousLevel, previousProgress]) => {
-    if (!gameReady.value || !saveLoaded.value) {
-        return;
-    }
-    if (nextLevel === previousLevel && Math.abs(nextProgress - previousProgress) < 0.001) {
-        return;
-    }
-
-    showLevelProgress.value = true;
-    if (levelProgressTimer !== null) {
-        window.clearTimeout(levelProgressTimer);
-    }
-    levelProgressTimer = window.setTimeout(() => {
-        showLevelProgress.value = false;
-        levelProgressTimer = null;
-    }, 3600);
-});
-
-onUnmounted(() => {
-    if (levelProgressTimer !== null) {
-        window.clearTimeout(levelProgressTimer);
-    }
-});
 </script>
 
 <template>
@@ -456,7 +432,7 @@ onUnmounted(() => {
             @save-download="saveAndDownload"
             @upload="openFilePicker"
         />
-            <HudOverlay
+        <HudOverlay
             v-if="gameReady"
             :level="level"
             :level-progress="levelProgress"
@@ -486,158 +462,76 @@ onUnmounted(() => {
         <div v-if="gameReady && activePlantSeedId" class="plant-mode-hint">
             {{ text.radial.plantModeHint }}
         </div>
-        <FarmOverlay
-            v-if="gameReady"
-            :open="farmMenuOpen"
+        <GameOverlays
+            :game-ready="gameReady"
+            :farm-menu-open="farmMenuOpen"
+            :contracts-menu-open="contractsMenuOpen"
+            :inventory-menu-open="inventoryMenuOpen"
+            :barn-chest-open="barnChestOpen"
+            :shop-menu-open="shopMenuOpen"
+            :sell-menu-open="sellMenuOpen"
+            :juice-menu-open="juiceMenuOpen"
             :farm-plots="localizedFarmPlots"
             :selected-plot-index="selectedPlotIndex"
             :coins="coins"
             :is-plot-unlocked="isPlotUnlocked"
             :can-unlock-plot="canUnlockPlot"
-            :labels="text.farm"
-            @close="farmMenuOpen = false"
-            @select-plot="selectPlot"
-            @unlock-plot="handleUnlockPlot"
-        />
-        <ContractsOverlay
-            v-if="gameReady"
-            :open="contractsMenuOpen"
-            :offers="contractOffers"
+            :contract-offers="contractOffers"
             :active-contract="contractSummary"
             :selected-contract="selectedContract"
             :selected-contract-id="selectedContract?.id ?? null"
-            :labels="text.contracts"
-            :item-label="itemLabel"
-            @close="contractsMenuOpen = false"
-            @select="selectContract"
-            @accept="acceptSelectedContract"
-        />
-        <InventoryOverlay
-            v-if="gameReady"
-            :open="inventoryMenuOpen"
             :backpack="backpack"
-            :inventory="inventory"
-            :selected-backpack-index="selectedBackpackIndex"
-            :inventory-index="inventoryIndex"
-            :labels="text.inventory"
-            :item-label="itemLabel"
-            :item-visual="itemVisual"
-            :item-quantity="itemQuantity"
-            :item-max="itemMax"
-            @close="inventoryMenuOpen = false"
-            @select-backpack="selectBackpackSlot"
-            @assign-quickbar="assignToQuickbar"
-            @drag-start="handleDragStart"
-            @drag-end="handleDragEnd"
-            @drop="handleDrop"
-        />
-        <BarnChestOverlay
-            v-if="gameReady"
-            :open="barnChestOpen"
-            :backpack="backpack"
-            :storage="barnStorage"
-            :inventory="inventory"
-            :selected-backpack-index="selectedBackpackIndex"
-            :inventory-index="inventoryIndex"
-            :item-label="itemLabel"
-            :item-visual="itemVisual"
-            :item-quantity="itemQuantity"
-            :item-max="itemMax"
-            @close="barnChestOpen = false"
-            @select-backpack="selectBackpackSlot"
-            @assign-quickbar="assignToQuickbar"
-            @drag-start="handleDragStart"
-            @drag-end="handleDragEnd"
-            @drop="handleDrop"
-        />
-        <ShopOverlay
-            v-if="gameReady"
-            :open="shopMenuOpen"
-            :shop-items="shopItems"
-            :coins="coins"
-            :backpack="backpack"
-            :inventory="inventory"
-            :selected-backpack-index="selectedBackpackIndex"
-            :inventory-index="inventoryIndex"
-            :labels="text.shop"
-            :item-label="itemLabel"
-            :item-visual="itemVisual"
-            :item-quantity="itemQuantity"
-            :item-max="itemMax"
-            @close="shopMenuOpen = false"
-            @buy="buyItem"
-            @shop-drag-start="handleShopDragStart"
-            @select-backpack="selectBackpackSlot"
-            @assign-quickbar="assignToQuickbar"
-            @drag-start="handleDragStart"
-            @drag-end="handleDragEnd"
-            @drop="handleDrop"
-        />
-        <SellOverlay
-            v-if="gameReady"
-            :open="sellMenuOpen"
-            :backpack="backpack"
+            :barn-storage="barnStorage"
             :inventory="inventory"
             :sell-slots="sellSlots"
-            :coins="coins"
-            :selected-backpack-index="selectedBackpackIndex"
-            :inventory-index="inventoryIndex"
-            :get-sell-price="getSellPrice"
-            :labels="text.sell"
-            :item-label="itemLabel"
-            :item-visual="itemVisual"
-            :item-quantity="itemQuantity"
-            :item-max="itemMax"
-            @close="sellMenuOpen = false"
-            @sell-items="sellItems"
-            @stage-sell="stageSellItem"
-            @clear-sell="clearSellBench"
-            @select-backpack="selectBackpackSlot"
-            @assign-quickbar="assignToQuickbar"
-            @drag-start="handleDragStart"
-            @drag-end="handleDragEnd"
-            @drop="handleDrop"
-        />
-        <JuiceOverlay
-            v-if="gameReady"
-            :open="juiceMenuOpen"
-            :labels="text.juice"
-            :recipes="juiceRecipes"
-            :selected-recipe-index="selectedRecipeIndex"
-            :backpack="backpack"
-            :inventory="inventory"
             :juice-slots="juiceSlots"
             :selected-backpack-index="selectedBackpackIndex"
             :inventory-index="inventoryIndex"
+            :shop-items="shopItems"
+            :juice-recipes="juiceRecipes"
+            :selected-recipe-index="selectedRecipeIndex"
+            :labels="text"
             :item-label="itemLabel"
             :item-visual="itemVisual"
             :item-quantity="itemQuantity"
             :item-max="itemMax"
-            @close="juiceMenuOpen = false"
-            @select-recipe="selectRecipe"
+            :get-sell-price="getSellPrice"
+            @close-farm="farmMenuOpen = false"
+            @close-contracts="contractsMenuOpen = false"
+            @close-inventory="inventoryMenuOpen = false"
+            @close-barn="barnChestOpen = false"
+            @close-shop="shopMenuOpen = false"
+            @close-sell="sellMenuOpen = false"
+            @close-juice="juiceMenuOpen = false"
+            @select-plot="selectPlot"
+            @unlock-plot="handleUnlockPlot"
+            @select-contract="selectContract"
+            @accept-contract="acceptSelectedContract"
             @select-backpack="selectBackpackSlot"
             @assign-quickbar="assignToQuickbar"
             @drag-start="handleDragStart"
             @drag-end="handleDragEnd"
             @drop="handleDrop"
+            @buy="buyItem"
+            @shop-drag-start="handleShopDragStart"
+            @sell-items="sellItems"
+            @stage-sell="stageSellItem"
+            @clear-sell="clearSellBench"
+            @select-recipe="selectRecipe"
             @craft="handleJuiceCraft"
         />
-        <WaterPipePuzzle
-            v-if="gameReady"
-            :open="waterMinigameOpen"
-            :labels="text.minigames.water"
-            @success="handleWaterMinigameSuccess"
-            @fail="handleWaterMinigameFail"
-            @close="closeWaterMinigame"
-        />
-        <SulfateMixer
-            v-if="gameReady"
-            :open="sulfateMinigameOpen"
+        <GameMinigames
+            :game-ready="gameReady"
+            :water-open="waterMinigameOpen"
+            :sulfate-open="sulfateMinigameOpen"
             :sulfate-id="selectedSulfateId"
-            :labels="text.minigames.sulfate"
-            @success="handleSulfateMinigameSuccess"
-            @fail="handleSulfateMinigameFail"
-            @close="closeSulfateMinigame"
+            :labels="text.minigames"
+            @water-success="handleWaterMinigameSuccess"
+            @water-fail="handleWaterMinigameFail"
+            @water-close="closeWaterMinigame"
+            @sulfate-success="handleSulfateMinigameSuccess"
+            @sulfate-fail="handleSulfateMinigameFail"
+            @sulfate-close="closeSulfateMinigame"
         />
         <div v-if="gameReady && toastMessage" class="game-toast">
             {{ toastMessage }}

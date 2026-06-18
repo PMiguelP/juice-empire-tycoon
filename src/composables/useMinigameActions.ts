@@ -1,16 +1,19 @@
 import { computed, type ComputedRef, type Ref } from "vue";
-import type {
-	SprayerChargeSave,
-	SulfateItemId,
-	SulfateQuality,
+import {
+	SPRAYER_CHARGE_USES as DEFAULT_SPRAYER_CHARGE_USES,
+	type SprayerChargeSave,
+	type SulfateItemId,
+	type SulfateQuality,
 } from "./usePlayerData";
 import type { useInventory } from "./useInventory";
+import { isEmptyWaterContainer } from "./useWaterContainers";
 
 type InventoryApi = ReturnType<typeof useInventory>;
 
 type MinigameText = {
 	radial: {
 		errors: {
+			needsEmptyWaterContainer: string;
 			needsSulfate: string;
 		};
 	};
@@ -60,6 +63,20 @@ export const useMinigameActions = ({
 		showToast(text.value.radial.errors.needsSulfate);
 	};
 
+	const showWaterContainerMissing = () => {
+		playSound("error", 0.22);
+		showToast(text.value.radial.errors.needsEmptyWaterContainer);
+	};
+
+	const requestWaterMinigame = () => {
+		if (!isEmptyWaterContainer(selectedItemId.value)) {
+			showWaterContainerMissing();
+			return;
+		}
+		closeContextMenus();
+		waterMinigameOpen.value = true;
+	};
+
 	const requestSulfateMixer = () => {
 		if (!selectedItemId.value?.startsWith("sulfate")) {
 			showSulfateMissing();
@@ -102,7 +119,11 @@ export const useMinigameActions = ({
 			closeSulfateMinigame();
 			return;
 		}
-		setSprayerCharge({ quality, sulfateId });
+		setSprayerCharge({
+			quality,
+			sulfateId,
+			usesLeft: DEFAULT_SPRAYER_CHARGE_USES,
+		});
 		playSound("sulfate", 0.24);
 		showToast(text.value.toasts.sulfateReady);
 		closeSulfateMinigame();
@@ -117,6 +138,7 @@ export const useMinigameActions = ({
 
 	return {
 		selectedSulfateId,
+		requestWaterMinigame,
 		requestSulfateMixer,
 		closeWaterMinigame,
 		closeSulfateMinigame,

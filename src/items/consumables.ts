@@ -15,7 +15,7 @@ export const CONSUMABLES_ITEMS: Record<string, ItemDefinition> = {
 			color: "#6a5130",
 			accent: "#bef264",
 			symbol: "F1",
-			image: "/assets/icons/fertelizante1.png",
+			image: "assets/icons/fertelizante1.png",
 		},
 	},
 	"fertilizer-growth": {
@@ -26,7 +26,7 @@ export const CONSUMABLES_ITEMS: Record<string, ItemDefinition> = {
 			color: "#365314",
 			accent: "#86efac",
 			symbol: "F2",
-			image: "/assets/icons/fertelizante2.png",
+			image: "assets/icons/fertelizante2.png",
 		},
 	},
 	"fertilizer-premium": {
@@ -37,7 +37,7 @@ export const CONSUMABLES_ITEMS: Record<string, ItemDefinition> = {
 			color: "#854d0e",
 			accent: "#fde68a",
 			symbol: "F3",
-			image: "/assets/icons/fertelizante3.png",
+			image: "assets/icons/fertelizante3.png",
 		},
 	},
 	"sulfate-basic": {
@@ -48,7 +48,7 @@ export const CONSUMABLES_ITEMS: Record<string, ItemDefinition> = {
 			color: "#0f766e",
 			accent: "#99f6e4",
 			symbol: "S1",
-			image: "/assets/icons/sulfate1.png",
+			image: "assets/icons/sulfate1.png",
 		},
 	},
 	"sulfate-strong": {
@@ -59,7 +59,7 @@ export const CONSUMABLES_ITEMS: Record<string, ItemDefinition> = {
 			color: "#1d4ed8",
 			accent: "#bfdbfe",
 			symbol: "S2",
-			image: "/assets/icons/sulfate2.png",
+			image: "assets/icons/sulfate2.png",
 		},
 	},
 	"sulfate-premium": {
@@ -70,7 +70,7 @@ export const CONSUMABLES_ITEMS: Record<string, ItemDefinition> = {
 			color: "#581c87",
 			accent: "#e9d5ff",
 			symbol: "S3",
-			image: "/assets/icons/sulfate3.png",
+			image: "assets/icons/sulfate3.png",
 		},
 	},
 };

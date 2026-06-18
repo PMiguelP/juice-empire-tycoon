@@ -9,7 +9,7 @@ export const TOOLS_ITEMS: Record<string, ItemDefinition> = {
 			color: "#38bdf8",
 			accent: "#bae6fd",
 			symbol: "G",
-			image: "/assets/icons/Garrafoes_1.png",
+			image: "assets/icons/Garrafoes_1.png",
 		},
 	},
 	"filled-water-jug": {
@@ -20,7 +20,7 @@ export const TOOLS_ITEMS: Record<string, ItemDefinition> = {
 			color: "#38bdf8",
 			accent: "#bae6fd",
 			symbol: "G",
-			image: "/assets/icons/Garrafoes_2.png",
+			image: "assets/icons/Garrafoes_2.png",
 		},
 	},
 	"empty-bottle": {
@@ -31,7 +31,7 @@ export const TOOLS_ITEMS: Record<string, ItemDefinition> = {
 			color: "#64748b",
 			accent: "#e2e8f0",
 			symbol: "B",
-			image: "/assets/icons/garrafavazia.png",
+			image: "assets/icons/garrafavazia.png",
 		},
 	},
 	"shovel": {
@@ -48,7 +48,7 @@ export const TOOLS_ITEMS: Record<string, ItemDefinition> = {
 			color: "#64748b",
 			accent: "#e2e8f0",
 			symbol: "SC",
-			image: "/assets/icons/tesoura.png",
+			image: "assets/icons/tesoura.png",
 		},
 	},
 	"watering-can": {
@@ -59,7 +59,7 @@ export const TOOLS_ITEMS: Record<string, ItemDefinition> = {
 			color: "#2563eb",
 			accent: "#bfdbfe",
 			symbol: "R",
-			image: "/assets/icons/regadorvazio.png",
+			image: "assets/icons/regadorvazio.png",
 		},
 	},
 	"filled-watering-can": {
@@ -70,7 +70,7 @@ export const TOOLS_ITEMS: Record<string, ItemDefinition> = {
 			color: "#2563eb",
 			accent: "#bfdbfe",
 			symbol: "R",
-			image: "/assets/icons/comagua.png",
+			image: "assets/icons/comagua.png",
 		},
 	},
 	"sprayer": {
@@ -81,7 +81,7 @@ export const TOOLS_ITEMS: Record<string, ItemDefinition> = {
 			color: "#16a34a",
 			accent: "#bbf7d0",
 			symbol: "SU",
-			image: "/assets/icons/sulfatador.png",
+			image: "assets/icons/sulfatador.png",
 		},
 	},
 	"potion": {

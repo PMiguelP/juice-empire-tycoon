@@ -1,6 +1,6 @@
 import type { ComputedRef, Ref } from "vue";
 import { HARVEST_XP_REWARD } from "./usePlayerData";
-import { getShopUnlocksBetweenLevels } from "./useMarket";
+import { getShopUnlocksBetweenLevels } from "./marketCatalog";
 
 type RewardText = {
 	toasts: {

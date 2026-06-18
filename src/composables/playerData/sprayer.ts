@@ -1,4 +1,5 @@
 import type { SprayerChargeSave, SulfateItemId, SulfateQuality } from "./types";
+import { SPRAYER_CHARGE_USES } from "./constants";
 
 const SULFATE_QUALITIES = new Set<SulfateQuality>(["perfect", "good", "poor"]);
 const SULFATE_IDS = new Set<SulfateItemId>([
@@ -16,5 +17,8 @@ export const normalizeSprayerCharge = (
 	if (!SULFATE_QUALITIES.has(charge.quality) || !SULFATE_IDS.has(charge.sulfateId)) {
 		return null;
 	}
-	return { ...charge };
+	return {
+		...charge,
+		usesLeft: Math.max(1, Math.floor(charge.usesLeft ?? SPRAYER_CHARGE_USES)),
+	};
 };

@@ -17,7 +17,7 @@ export const pt = {
 				movement: "Usa W-A-S-D para andar pela quinta.",
 				interaction: "Usa F para interagir e E para abrir a roda de ações.",
 				menus: "G abre o inventário. Loja, venda, terrenos e receitas abrem nos edifícios certos.",
-				quickbar: "Usa 1-5 para selecionar itens. N enche água, M prepara sulfato, Esc fecha menus.",
+				quickbar: "Usa 1-5 para selecionar itens. Enche água no poço com garrafão ou regador vazio. M prepara sulfato, Esc fecha menus.",
 			},
 		},
 		hud: {
@@ -34,7 +34,7 @@ export const pt = {
 			unlockedItems: (items: string) => `Desbloqueaste: ${items}.`,
 			waterReady: (quantity: number) => `Água pronta: +${quantity}.`,
 			waterFailed: "A água perdeu-se. Tenta outra vez.",
-			sulfateReady: "Sulfatador carregado. Equipa-o e trata uma árvore.",
+			sulfateReady: "Sulfatador carregado para 4 árvores. Equipa-o e trata as pragas.",
 			sulfateFailed: "A mistura falhou e foi desperdiçada.",
 			contractComplete: (reward: number) => `Contrato entregue: +${reward} moedas.`,
 			juiceCrafted: (label: string, quantity = 1) => `${quantity}x ${label} pronto.`,
@@ -45,7 +45,7 @@ export const pt = {
 		minigames: {
 			water: {
 				title: "Canos & Balde",
-				subtitle: "N para brincar aos canalizadores.",
+				subtitle: "Equipa garrafão ou regador vazio e interage com o poço.",
 				source: "Fonte",
 				bucket: "Balde",
 				initial: "Liga a fonte ao balde antes do cano fazer glup.",
@@ -86,6 +86,7 @@ export const pt = {
 				{ label: "Sulfatar", description: "Protege a cultura de pragas" },
 			],
 			errors: {
+				needsEmptyWaterContainer: "Equipa um garrafão ou regador vazio para encher água.",
 				needsWater: "Precisas de um garrafão ou regador com água.",
 				waterTree: "Chega-te a uma árvore adulta para regar.",
 				harvestTree: "Não há fruta pronta aqui ou a árvore tem insetos.",
@@ -108,6 +109,7 @@ export const pt = {
 			farm: "TERRENOS",
 			chest: "BAU",
 			contracts: "CONTRATOS",
+			water: "AGUA",
 		},
 		contracts: {
 			title: "Quadro de Contratos",

@@ -8,7 +8,8 @@ export type InteractionLabelKey =
 	| "sell"
 	| "farm"
 	| "chest"
-	| "contracts";
+	| "contracts"
+	| "water";
 
 export const INTERACTION_LABELS: Record<
 	InteractionLanguage,
@@ -23,6 +24,7 @@ export const INTERACTION_LABELS: Record<
 		farm: "TERRENOS",
 		chest: "BAU",
 		contracts: "CONTRATOS",
+		water: "AGUA",
 	},
 	en: {
 		enter: "ENTER",
@@ -33,5 +35,6 @@ export const INTERACTION_LABELS: Record<
 		farm: "PLOTS",
 		chest: "CHEST",
 		contracts: "TASKS",
+		water: "WATER",
 	},
 };

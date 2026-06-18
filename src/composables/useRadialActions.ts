@@ -2,7 +2,7 @@ import type { ComputedRef, Ref } from "vue";
 import { EventBus } from "../game/EventBus";
 import type { InventoryEntry } from "../items";
 import { getItemId } from "../items";
-import type { SprayerChargeSave } from "./usePlayerData";
+import { SPRAYER_CHARGE_USES, type SprayerChargeSave } from "./usePlayerData";
 import type { useInventory } from "./useInventory";
 import { isFilledWaterContainer } from "./useWaterContainers";
 
@@ -174,7 +174,8 @@ export const useRadialActions = ({
 	};
 
 	const handleSulfateAction = (selectedItemId: string | null) => {
-		if (!sprayerCharge.value) {
+		const charge = sprayerCharge.value;
+		if (!charge) {
 			if (selectedItemId === "sprayer") {
 				showError(messages.value.prepareSulfate);
 				return;
@@ -193,11 +194,15 @@ export const useRadialActions = ({
 		}
 
 		EventBus.emit("farm:sulfate-request", {
-			quality: sprayerCharge.value.quality,
+			quality: charge.quality,
 			onResult: (success: boolean) => {
 				if (success) {
 					playSound("sulfate", 0.34);
-					setSprayerCharge(null);
+					const usesLeft = Math.max(
+						0,
+						(charge.usesLeft ?? SPRAYER_CHARGE_USES) - 1,
+					);
+					setSprayerCharge(usesLeft > 0 ? { ...charge, usesLeft } : null);
 				} else {
 					showError(messages.value.sulfateTree);
 				}

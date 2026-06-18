@@ -21,6 +21,11 @@ import {
 	normalizeJuiceSlots,
 } from "./playerData/normalizers";
 import { applyXpGain, getLevelProgress } from "./playerData/progress";
+import {
+	getCoinsFromSave,
+	normalizeInventorySlots,
+	normalizePlotUnlocks,
+} from "./playerData/saveNormalizers";
 import { normalizeSprayerCharge } from "./playerData/sprayer";
 import type {
 	ContractSave,
@@ -45,6 +50,7 @@ export {
 	HARVEST_XP_REWARD,
 	JUICE_XP_REWARD,
 	PLANT_XP_REWARD,
+	SPRAYER_CHARGE_USES,
 	STORAGE_KEY,
 	WATER_XP_REWARD,
 } from "./playerData/constants";
@@ -82,45 +88,19 @@ export const usePlayerData = () => {
 	const xpForNextLevel = computed(() => getXpForNextLevel(level.value));
 	const levelProgress = computed(() => getLevelProgress(xp.value, level.value));
 
-	const getCoinsFromSave = (data: SaveData) => {
-		const savedCoins = Math.max(0, Math.floor(data.coins ?? STARTING_COINS));
-		const savedLevel = data.level ?? 1;
-		const savedXp = Math.max(0, Math.floor(data.xp ?? 0));
-		const isOldEmptyStart =
-			(data.saveVersion ?? 0) < SAVE_VERSION &&
-			savedLevel === 1 &&
-			savedXp === 0 &&
-			savedCoins === 0;
-
-		return isOldEmptyStart ? STARTING_COINS : savedCoins;
-	};
-
 	const applySave = (data: SaveData) => {
 		level.value = data.level ?? 1;
 		xp.value = Math.max(0, Math.floor(data.xp ?? 0));
 		coins.value = getCoinsFromSave(data);
 		completedContracts.value = Math.max(0, Math.floor(data.completedContracts ?? 0));
 		missedContracts.value = Math.max(0, Math.floor(data.missedContracts ?? 0));
-		inventory.value = Array.from({ length: 5 }, (_, index) => {
-			return normalizeEntry(data.inventory?.[index] ?? null);
-		});
-		backpack.value = Array.from({ length: 15 }, (_, index) => {
-			return normalizeEntry(data.backpack?.[index] ?? null);
-		});
-		barnStorage.value = Array.from({ length: 18 }, (_, index) => {
-			return normalizeEntry(data.barnStorage?.[index] ?? null);
-		});
-		sellSlots.value = Array.from({ length: 6 }, (_, index) => {
-			return normalizeEntry(data.sellSlots?.[index] ?? null);
-		});
+		inventory.value = normalizeInventorySlots(data.inventory, 5);
+		backpack.value = normalizeInventorySlots(data.backpack, 15);
+		barnStorage.value = normalizeInventorySlots(data.barnStorage, 18);
+		sellSlots.value = normalizeInventorySlots(data.sellSlots, 6);
 		juiceSlots.value = normalizeJuiceSlots(data.juiceSlots);
 		inventoryIndex.value = Math.min(Math.max(data.selectedSlot ?? 0, 0), 4);
-		if (data.plotUnlocks && data.plotUnlocks.length === farmPlots.length) {
-			plotUnlocks.value = data.plotUnlocks.slice();
-		} else {
-			plotUnlocks.value = [true, false, false, false];
-		}
-		plotUnlocks.value[0] = true;
+		plotUnlocks.value = normalizePlotUnlocks(data.plotUnlocks, farmPlots.length);
 		farmTrees.value = Array.isArray(data.farmTrees)
 			? data.farmTrees.map((tree) => ({ ...tree }))
 			: [];

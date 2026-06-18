@@ -1,12 +1,14 @@
-import Phaser from "phaser";
 import type { Game } from "../Game";
 import { INTERIOR_MAP_KEYS } from "./constants";
+import { getDistanceToTarget } from "./interactionGeometry";
 import {
 	INTERACTION_LABELS,
 	type InteractionLabelKey,
 	type InteractionLanguage,
 } from "./interactionLabels";
 import { INTERIOR_SERVICE_TARGETS } from "./interactionTargets";
+import { getObjectLayerCenterTarget } from "./objectLayerTargets";
+import { getTileLayerTargets } from "./tileLayerTargets";
 import type { InteractionTarget } from "./types";
 
 export class InteractionTargetResolver {
@@ -27,25 +29,7 @@ export class InteractionTargetResolver {
 	}
 
 	getDistanceToTarget(x: number, y: number, target: InteractionTarget) {
-		if (!target.bounds) {
-			const dx = x - target.x;
-			const dy = y - target.y;
-			return Math.sqrt(dx * dx + dy * dy);
-		}
-
-		const closestX = Phaser.Math.Clamp(
-			x,
-			target.bounds.minX,
-			target.bounds.maxX,
-		);
-		const closestY = Phaser.Math.Clamp(
-			y,
-			target.bounds.minY,
-			target.bounds.maxY,
-		);
-		const dx = x - closestX;
-		const dy = y - closestY;
-		return Math.sqrt(dx * dx + dy * dy);
+		return getDistanceToTarget(x, y, target);
 	}
 
 	private getExteriorInteractionTargets() {
@@ -69,6 +53,15 @@ export class InteractionTargetResolver {
 				targets.push(target);
 			}
 		}
+
+		targets.push(
+			...getTileLayerTargets(
+				this.scene.map,
+				"poco",
+				"water",
+				this.getLabel("water"),
+			),
+		);
 
 		return targets;
 	}
@@ -164,43 +157,11 @@ export class InteractionTargetResolver {
 		action: NonNullable<InteractionTarget["action"]>,
 		label: string,
 	) {
-		const objectLayer = this.scene.map?.getObjectLayer(layerName);
-		if (!objectLayer?.objects) {
-			return null;
-		}
-
-		const bounds = objectLayer.objects.reduce(
-			(acc, object) => {
-				const x = object.x ?? 0;
-				const y = object.y ?? 0;
-				const width = object.width ?? 0;
-				const height = object.height ?? 0;
-				return {
-					minX: Math.min(acc.minX, x),
-					minY: Math.min(acc.minY, y),
-					maxX: Math.max(acc.maxX, x + width),
-					maxY: Math.max(acc.maxY, y + height),
-				};
-			},
-			{
-				minX: Number.POSITIVE_INFINITY,
-				minY: Number.POSITIVE_INFINITY,
-				maxX: Number.NEGATIVE_INFINITY,
-				maxY: Number.NEGATIVE_INFINITY,
-			},
+		return (
+			getObjectLayerCenterTarget(this.scene.map, layerName, action, label) ??
+			getTileLayerTargets(this.scene.map, layerName, action, label)[0] ??
+			null
 		);
-
-		if (!Number.isFinite(bounds.minX) || !Number.isFinite(bounds.minY)) {
-			return null;
-		}
-
-		return {
-			x: (bounds.minX + bounds.maxX) / 2,
-			y: bounds.maxY,
-			bounds,
-			action,
-			label,
-		};
 	}
 
 	private getLabel(key: InteractionLabelKey) {

@@ -35,4 +35,5 @@ export const INTERIOR_ACTION_EVENTS: Partial<
 	juice: "ui:open-juice",
 	chest: "ui:open-barn-chest",
 	contracts: "ui:open-contracts",
+	water: "ui:open-water",
 };

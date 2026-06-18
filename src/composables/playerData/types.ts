@@ -6,6 +6,7 @@ export type SulfateItemId = "sulfate-basic" | "sulfate-strong" | "sulfate-premiu
 export type SprayerChargeSave = {
 	quality: SulfateQuality;
 	sulfateId: SulfateItemId;
+	usesLeft?: number;
 };
 
 export type SaveData = {

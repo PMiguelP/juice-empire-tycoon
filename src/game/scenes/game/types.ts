@@ -34,6 +34,7 @@ export type InteractionTarget = {
 		| "juice"
 		| "chest"
 		| "contracts"
+		| "water"
 		| "camera";
 	label?: string;
 };

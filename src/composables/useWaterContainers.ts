@@ -26,6 +26,12 @@ export const isFilledWaterContainer = (
 	return itemId === "filled-water-jug" || itemId === "filled-watering-can";
 };
 
+export const isEmptyWaterContainer = (
+	itemId: string | null | undefined,
+): itemId is "water" | "watering-can" => {
+	return itemId === "water" || itemId === "watering-can";
+};
+
 export const useWaterContainers = (
 	quickbar: Ref<InventoryEntry[]>,
 	quickbarIndex: Ref<number>,

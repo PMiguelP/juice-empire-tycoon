@@ -9,7 +9,7 @@ export const FRUIT_ITEMS: Record<string, ItemDefinition> = {
 			color: "#f28c28",
 			accent: "#ffd166",
 			symbol: "O",
-			image: "/assets/icons/laranja.png",
+			image: "assets/icons/laranja.png",
 		},
 	},
 	"pomegranate": {
@@ -20,7 +20,7 @@ export const FRUIT_ITEMS: Record<string, ItemDefinition> = {
 			color: "#9d174d",
 			accent: "#f472b6",
 			symbol: "R",
-			image: "/assets/icons/roma.png",
+			image: "assets/icons/roma.png",
 		},
 	},
 	"peach": {
@@ -31,7 +31,7 @@ export const FRUIT_ITEMS: Record<string, ItemDefinition> = {
 			color: "#fb9f89",
 			accent: "#ffd08a",
 			symbol: "P",
-			image: "/assets/icons/pessego.png",
+			image: "assets/icons/pessego.png",
 		},
 	},
 	"lemon": {
@@ -42,7 +42,7 @@ export const FRUIT_ITEMS: Record<string, ItemDefinition> = {
 			color: "#facc15",
 			accent: "#fef08a",
 			symbol: "L",
-			image: "/assets/icons/limao.png",
+			image: "assets/icons/limao.png",
 		},
 	},
 	"orange-juice": {
@@ -53,7 +53,7 @@ export const FRUIT_ITEMS: Record<string, ItemDefinition> = {
 			color: "#ea580c",
 			accent: "#fed7aa",
 			symbol: "OJ",
-			image: "/assets/icons/Frasco_1.png",
+			image: "assets/icons/Frasco_1.png",
 		},
 	},
 	"pomegranate-juice": {
@@ -64,7 +64,7 @@ export const FRUIT_ITEMS: Record<string, ItemDefinition> = {
 			color: "#be123c",
 			accent: "#fecdd3",
 			symbol: "RJ",
-			image: "/assets/icons/Frasco_2.png",
+			image: "assets/icons/Frasco_2.png",
 		},
 	},
 	"peach-juice": {
@@ -75,7 +75,7 @@ export const FRUIT_ITEMS: Record<string, ItemDefinition> = {
 			color: "#f97316",
 			accent: "#fed7aa",
 			symbol: "PJ",
-			image: "/assets/icons/Frasco_3.png",
+			image: "assets/icons/Frasco_3.png",
 		},
 	},
 	"lemon-juice": {
@@ -86,7 +86,7 @@ export const FRUIT_ITEMS: Record<string, ItemDefinition> = {
 			color: "#eab308",
 			accent: "#fef9c3",
 			symbol: "LJ",
-			image: "/assets/icons/Frasco_4.png",
+			image: "assets/icons/Frasco_4.png",
 		},
 	},
 };

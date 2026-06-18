@@ -15,7 +15,7 @@ export const SEEDS_ITEMS: Record<string, ItemDefinition> = {
 			color: "#f28c28",
 			accent: "#14532d",
 			symbol: "OS",
-			image: "/assets/icons/sementelaranjeira.png",
+			image: "assets/icons/sementelaranjeira.png",
 		},
 	},
 	"pomegranate-tree-seed": {
@@ -26,7 +26,7 @@ export const SEEDS_ITEMS: Record<string, ItemDefinition> = {
 			color: "#9d174d",
 			accent: "#166534",
 			symbol: "RS",
-			image: "/assets/icons/sementeromanzeira.png",
+			image: "assets/icons/sementeromanzeira.png",
 		},
 	},
 	"peach-tree-seed": {
@@ -37,7 +37,7 @@ export const SEEDS_ITEMS: Record<string, ItemDefinition> = {
 			color: "#fb9f89",
 			accent: "#15803d",
 			symbol: "PS",
-			image: "/assets/icons/sementepessegueiro.png",
+			image: "assets/icons/sementepessegueiro.png",
 		},
 	},
 	"lemon-tree-seed": {
@@ -48,7 +48,7 @@ export const SEEDS_ITEMS: Record<string, ItemDefinition> = {
 			color: "#facc15",
 			accent: "#166534",
 			symbol: "LS",
-			image: "/assets/icons/sementelimoeiro.png",
+			image: "assets/icons/sementelimoeiro.png",
 		},
 	},
 };

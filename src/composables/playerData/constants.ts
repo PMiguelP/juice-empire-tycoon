@@ -5,6 +5,7 @@ export const PLANT_XP_REWARD = 10;
 export const HARVEST_XP_REWARD = 15;
 export const JUICE_XP_REWARD = 25;
 export const WATER_XP_REWARD = 5;
+export const SPRAYER_CHARGE_USES = 4;
 export const DAY_START_MINUTE = 8 * 60;
 export const DAY_MINUTES = 24 * 60;
 export const CONTRACT_DURATION_MINUTES = 8 * 60;

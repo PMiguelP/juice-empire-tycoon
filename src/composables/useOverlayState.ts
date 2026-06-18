@@ -16,6 +16,28 @@ export const useOverlayState = (currentMapKey: ComputedRef<string>) => {
 	const sulfateMinigameOpen = ref(false);
 	const selectedBackpackIndex = ref<number | null>(null);
 
+	const contextualMenus = {
+		farm: { open: farmMenuOpen, mapKey: "camera" },
+		contracts: { open: contractsMenuOpen, mapKey: "camera" },
+		barnChest: { open: barnChestOpen, mapKey: "barn" },
+		shop: { open: shopMenuOpen, mapKey: "mercadocompra" },
+		sell: { open: sellMenuOpen, mapKey: "mercadovenda" },
+		juice: { open: juiceMenuOpen, mapKey: "centrifugadora" },
+	};
+	const allContextMenus = [
+		menuOpen,
+		pauseMenuOpen,
+		farmMenuOpen,
+		inventoryMenuOpen,
+		barnChestOpen,
+		shopMenuOpen,
+		sellMenuOpen,
+		juiceMenuOpen,
+		contractsMenuOpen,
+		waterMinigameOpen,
+		sulfateMinigameOpen,
+	];
+
 	const closeMenu = () => {
 		pauseMenuOpen.value = false;
 		if (menuMode.value === "main") {
@@ -24,86 +46,33 @@ export const useOverlayState = (currentMapKey: ComputedRef<string>) => {
 	};
 
 	const closeContextMenus = () => {
-		menuOpen.value = false;
-		pauseMenuOpen.value = false;
-		farmMenuOpen.value = false;
-		inventoryMenuOpen.value = false;
-		barnChestOpen.value = false;
-		shopMenuOpen.value = false;
-		sellMenuOpen.value = false;
-		juiceMenuOpen.value = false;
-		contractsMenuOpen.value = false;
-		waterMinigameOpen.value = false;
-		sulfateMinigameOpen.value = false;
+		for (const overlay of allContextMenus) {
+			overlay.value = false;
+		}
 		selectedBackpackIndex.value = null;
 	};
 
-	const openFarmMenu = () => {
-		if (currentMapKey.value !== "camera") {
+	const openContextMenu = (key: keyof typeof contextualMenus) => {
+		const menu = contextualMenus[key];
+		if (currentMapKey.value !== menu.mapKey) {
 			return;
 		}
 		closeContextMenus();
-		farmMenuOpen.value = true;
+		menu.open.value = true;
 	};
 
-	const openShopMenu = () => {
-		if (currentMapKey.value !== "mercadocompra") {
-			return;
-		}
-		closeContextMenus();
-		shopMenuOpen.value = true;
-	};
-
-	const openSellMenu = () => {
-		if (currentMapKey.value !== "mercadovenda") {
-			return;
-		}
-		closeContextMenus();
-		sellMenuOpen.value = true;
-	};
-
-	const openJuiceMenu = () => {
-		if (currentMapKey.value !== "centrifugadora") {
-			return;
-		}
-		closeContextMenus();
-		juiceMenuOpen.value = true;
-	};
-
-	const openBarnChest = () => {
-		if (currentMapKey.value !== "barn") {
-			return;
-		}
-		closeContextMenus();
-		barnChestOpen.value = true;
-	};
-
-	const openContractsMenu = () => {
-		if (currentMapKey.value !== "camera") {
-			return;
-		}
-		closeContextMenus();
-		contractsMenuOpen.value = true;
-	};
+	const openFarmMenu = () => openContextMenu("farm");
+	const openShopMenu = () => openContextMenu("shop");
+	const openSellMenu = () => openContextMenu("sell");
+	const openJuiceMenu = () => openContextMenu("juice");
+	const openBarnChest = () => openContextMenu("barnChest");
+	const openContractsMenu = () => openContextMenu("contracts");
 
 	watch(currentMapKey, (mapKey) => {
-		if (mapKey !== "camera") {
-			farmMenuOpen.value = false;
-		}
-		if (mapKey !== "barn") {
-			barnChestOpen.value = false;
-		}
-		if (mapKey !== "mercadocompra") {
-			shopMenuOpen.value = false;
-		}
-		if (mapKey !== "mercadovenda") {
-			sellMenuOpen.value = false;
-		}
-		if (mapKey !== "centrifugadora") {
-			juiceMenuOpen.value = false;
-		}
-		if (mapKey !== "camera") {
-			contractsMenuOpen.value = false;
+		for (const menu of Object.values(contextualMenus)) {
+			if (mapKey !== menu.mapKey) {
+				menu.open.value = false;
+			}
 		}
 	});
 

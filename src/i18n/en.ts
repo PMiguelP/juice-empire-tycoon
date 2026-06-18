@@ -17,7 +17,7 @@ export const en = {
 				movement: "Use W-A-S-D to walk around the farm.",
 				interaction: "Use F to interact and E to open the action wheel.",
 				menus: "G opens inventory. Shop, sell, plots, and recipes open in the right buildings.",
-				quickbar: "Use 1-5 to select items. N fills water, M prepares sulfate, Esc closes menus.",
+				quickbar: "Use 1-5 to select items. Fill water at the well with an empty jug or watering can. M prepares sulfate, Esc closes menus.",
 			},
 		},
 		hud: {
@@ -34,7 +34,7 @@ export const en = {
 			unlockedItems: (items: string) => `Unlocked: ${items}.`,
 			waterReady: (quantity: number) => `Water ready: +${quantity}.`,
 			waterFailed: "The water was lost. Try again.",
-			sulfateReady: "Sprayer loaded. Equip it and treat a tree.",
+			sulfateReady: "Sprayer loaded for 4 trees. Equip it and treat pests.",
 			sulfateFailed: "The mix failed and was wasted.",
 			contractComplete: (reward: number) => `Contract delivered: +${reward} coins.`,
 			juiceCrafted: (label: string, quantity = 1) => `${quantity}x ${label} ready.`,
@@ -45,7 +45,7 @@ export const en = {
 		minigames: {
 			water: {
 				title: "Pipes & Bucket",
-				subtitle: "Press N to play plumber.",
+				subtitle: "Equip an empty jug or watering can and interact with the well.",
 				source: "Source",
 				bucket: "Bucket",
 				initial: "Connect the source to the bucket before the pipe gurgles.",
@@ -86,6 +86,7 @@ export const en = {
 				{ label: "Spray", description: "Protect the crop from pests" },
 			],
 			errors: {
+				needsEmptyWaterContainer: "Equip an empty jug or watering can to collect water.",
 				needsWater: "You need a water jug or watering can with water.",
 				waterTree: "Move closer to a mature tree to water it.",
 				harvestTree: "No fruit is ready here, or the tree has pests.",
@@ -108,6 +109,7 @@ export const en = {
 			farm: "PLOTS",
 			chest: "CHEST",
 			contracts: "TASKS",
+			water: "WATER",
 		},
 		contracts: {
 			title: "Contract Board",
