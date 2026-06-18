@@ -1,4 +1,7 @@
 <script setup>
+import InventorySlot from "./InventorySlot.vue";
+import InventoryGrid from "./InventoryGrid.vue";
+
 defineProps({
     open: { type: Boolean, required: true },
     backpack: { type: Array, required: true },
@@ -52,87 +55,43 @@ const assignToQuickbar = (index) => {
             <div class="inventory-body">
                 <div class="inventory-backpack">
                     <div class="inventory-section-title">{{ labels.backpack }}</div>
-                    <div class="inventory-grid">
-                        <button
+                    <InventoryGrid>
+                        <InventorySlot
                             v-for="(item, index) in backpack"
                             :key="`backpack-${index}`"
-                            class="inventory-cell"
-                            :class="{
-                                'is-selected': selectedBackpackIndex === index,
-                                'is-draggable': Boolean(item),
-                            }"
-                            type="button"
-                            @click="selectBackpackSlot(index)"
-                            draggable="true"
-                            @dragstart="emit('drag-start', 'backpack', index)"
-                            @dragend="emit('drag-end')"
-                            @dragover.prevent
-                            @drop="emit('drop', 'backpack', index)"
-                        >
-                            <span v-if="item" class="item-stack">
-                                <span
-                                    class="item-token"
-                                    :style="{
-                                        '--item-color': itemVisual(item).color,
-                                        '--item-accent': itemVisual(item).accent,
-                                    }"
-                                >
-                                    {{ itemVisual(item).symbol }}
-                                </span>
-                                <span class="inventory-cell-label">
-                                    {{ itemLabel(item) }}
-                                </span>
-                                <span class="item-quantity">
-                                    {{ itemQuantity(item) }}/{{ itemMax(item) }}
-                                </span>
-                            </span>
-                            <span class="inventory-cell-index">
-                                {{ index + 1 }}
-                            </span>
-                        </button>
-                    </div>
+                            :item="item"
+                            :index="index"
+                            :selected="selectedBackpackIndex === index"
+                            :item-label="itemLabel"
+                            :item-visual="itemVisual"
+                            :item-quantity="itemQuantity"
+                            :item-max="itemMax"
+                            @activate="selectBackpackSlot(index)"
+                            @drag-start="emit('drag-start', 'backpack', index)"
+                            @drag-end="emit('drag-end')"
+                            @drop="emit('drop', 'backpack', index, $event)"
+                        />
+                    </InventoryGrid>
                 </div>
                 <div class="inventory-quickbar">
                     <div class="inventory-section-title">{{ labels.quickbar }}</div>
-                    <div class="inventory-quickbar-grid">
-                        <button
+                    <InventoryGrid variant="quickbar">
+                        <InventorySlot
                             v-for="(item, index) in inventory"
                             :key="`quickbar-${index}`"
-                            class="inventory-cell"
-                            :class="{
-                                'is-selected': inventoryIndex === index,
-                                'is-draggable': Boolean(item),
-                            }"
-                            type="button"
-                            @click="assignToQuickbar(index)"
-                            draggable="true"
-                            @dragstart="emit('drag-start', 'quickbar', index)"
-                            @dragend="emit('drag-end')"
-                            @dragover.prevent
-                            @drop="emit('drop', 'quickbar', index)"
-                        >
-                            <span v-if="item" class="item-stack">
-                                <span
-                                    class="item-token"
-                                    :style="{
-                                        '--item-color': itemVisual(item).color,
-                                        '--item-accent': itemVisual(item).accent,
-                                    }"
-                                >
-                                    {{ itemVisual(item).symbol }}
-                                </span>
-                                <span class="inventory-cell-label">
-                                    {{ itemLabel(item) }}
-                                </span>
-                                <span class="item-quantity">
-                                    {{ itemQuantity(item) }}/{{ itemMax(item) }}
-                                </span>
-                            </span>
-                            <span class="inventory-cell-index">
-                                {{ index + 1 }}
-                            </span>
-                        </button>
-                    </div>
+                            :item="item"
+                            :index="index"
+                            :selected="inventoryIndex === index"
+                            :item-label="itemLabel"
+                            :item-visual="itemVisual"
+                            :item-quantity="itemQuantity"
+                            :item-max="itemMax"
+                            @activate="assignToQuickbar(index)"
+                            @drag-start="emit('drag-start', 'quickbar', index)"
+                            @drag-end="emit('drag-end')"
+                            @drop="emit('drop', 'quickbar', index, $event)"
+                        />
+                    </InventoryGrid>
                     <div class="inventory-note">{{ labels.closeHint }}</div>
                 </div>
             </div>

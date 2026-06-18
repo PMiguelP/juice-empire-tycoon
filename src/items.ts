@@ -1,3 +1,8 @@
+import { CONSUMABLES_ITEMS } from "./items/consumables";
+import { FRUIT_ITEMS } from "./items/fruit";
+import { SEEDS_ITEMS } from "./items/seeds";
+import { TOOLS_ITEMS } from "./items/tools";
+
 export type ItemVisual = {
 	color: string;
 	accent: string;
@@ -20,115 +25,28 @@ export type InventoryStack = {
 export type InventoryEntry = string | InventoryStack | null;
 
 export const ITEM_CATALOG: Record<string, ItemDefinition> = {
-	"seed-bag": {
-		id: "seed-bag",
-		price: 50,
-		maxStack: 30,
-		visual: { color: "#8f6b3d", accent: "#d6b06f", symbol: "S" },
-	},
-	fertilizer: {
-		id: "fertilizer",
-		price: 35,
-		maxStack: 15,
-		visual: { color: "#6a5130", accent: "#9fce67", symbol: "F" },
-	},
-	orange: {
-		id: "orange",
-		price: 12,
-		maxStack: 15,
-		visual: { color: "#f28c28", accent: "#ffd166", symbol: "O" },
-	},
-	pomegranate: {
-		id: "pomegranate",
-		price: 18,
-		maxStack: 12,
-		visual: { color: "#9d174d", accent: "#f472b6", symbol: "R" },
-	},
-	peach: {
-		id: "peach",
-		price: 15,
-		maxStack: 15,
-		visual: { color: "#fb9f89", accent: "#ffd08a", symbol: "P" },
-	},
-	lemon: {
-		id: "lemon",
-		price: 10,
-		maxStack: 20,
-		visual: { color: "#facc15", accent: "#fef08a", symbol: "L" },
-	},
-	water: {
-		id: "water",
-		price: 4,
-		maxStack: 20,
-		visual: { color: "#38bdf8", accent: "#bae6fd", symbol: "W" },
-	},
-	"empty-bottle": {
-		id: "empty-bottle",
-		price: 8,
-		maxStack: 10,
-		visual: { color: "#64748b", accent: "#e2e8f0", symbol: "B" },
-	},
-	"orange-juice": {
-		id: "orange-juice",
-		price: 34,
-		maxStack: 6,
-		visual: { color: "#ea580c", accent: "#fed7aa", symbol: "OJ" },
-	},
-	"pomegranate-juice": {
-		id: "pomegranate-juice",
-		price: 46,
-		maxStack: 6,
-		visual: { color: "#be123c", accent: "#fecdd3", symbol: "RJ" },
-	},
-	"peach-juice": {
-		id: "peach-juice",
-		price: 40,
-		maxStack: 6,
-		visual: { color: "#f97316", accent: "#fed7aa", symbol: "PJ" },
-	},
-	"lemon-juice": {
-		id: "lemon-juice",
-		price: 32,
-		maxStack: 6,
-		visual: { color: "#eab308", accent: "#fef9c3", symbol: "LJ" },
-	},
-	shovel: {
-		id: "shovel",
-		price: 150,
-		maxStack: 1,
-		visual: { color: "#475569", accent: "#cbd5e1", symbol: "T" },
-	},
-	potion: {
-		id: "potion",
-		price: 75,
-		maxStack: 5,
-		visual: { color: "#dc2626", accent: "#fecaca", symbol: "+" },
-	},
-	roasta: {
-		id: "roasta",
-		price: 10,
-		maxStack: 10,
-		visual: { color: "#7c2d12", accent: "#fdba74", symbol: "R" },
-	},
-	chappir: {
-		id: "chappir",
-		price: 50,
-		maxStack: 10,
-		visual: { color: "#4338ca", accent: "#c4b5fd", symbol: "C" },
-	},
+	...SEEDS_ITEMS,
+	...CONSUMABLES_ITEMS,
+	...FRUIT_ITEMS,
+	...TOOLS_ITEMS,
 };
 
 export const SHOP_ITEM_IDS = [
-	"orange",
-	"pomegranate",
-	"peach",
-	"lemon",
+	"orange-tree-seed",
+	"pomegranate-tree-seed",
+	"peach-tree-seed",
+	"lemon-tree-seed",
+	"fertilizer-basic",
+	"fertilizer-growth",
+	"fertilizer-premium",
+	"sulfate-basic",
+	"sulfate-strong",
+	"sulfate-premium",
 	"water",
 	"empty-bottle",
-	"seed-bag",
-	"fertilizer",
-	"shovel",
-	"potion",
+	"scissors",
+	"watering-can",
+	"sprayer",
 ];
 
 export const getItemId = (entry: InventoryEntry): string | null => {
@@ -210,6 +128,103 @@ export const addOneToSlots = (
 	}
 
 	return null;
+};
+
+export const addQuantityToEntry = (
+	entry: InventoryEntry,
+	itemId: string,
+	quantity: number,
+): InventoryStack | null => {
+	if (!Number.isInteger(quantity) || quantity < 1) {
+		return null;
+	}
+
+	const normalized = normalizeEntry(entry);
+	if (!normalized) {
+		if (quantity > getMaxStack(itemId)) {
+			return null;
+		}
+		return { id: itemId, quantity };
+	}
+
+	if (getItemId(normalized) !== itemId) {
+		return null;
+	}
+
+	const nextQuantity = normalized.quantity + quantity;
+	if (nextQuantity > getMaxStack(itemId)) {
+		return null;
+	}
+
+	return { id: itemId, quantity: nextQuantity };
+};
+
+export const addQuantityToSlots = (
+	slots: Array<InventoryStack | null>,
+	itemId: string,
+	quantity: number,
+	preferredIndex: number | null = null,
+): Array<InventoryStack | null> | null => {
+	if (!Number.isInteger(quantity) || quantity < 1 || quantity > getMaxStack(itemId)) {
+		return null;
+	}
+
+	const next = slots.slice();
+	let remaining = quantity;
+	const preferred = preferredIndex ?? -1;
+
+	if (preferred >= 0 && preferred < next.length) {
+		const preferredId = getItemId(next[preferred]);
+		if (!next[preferred] || preferredId === itemId) {
+			const currentQuantity = getItemQuantity(next[preferred]);
+			const capacity = getMaxStack(itemId) - currentQuantity;
+			const amount = Math.min(capacity, remaining);
+			if (amount > 0) {
+				next[preferred] = { id: itemId, quantity: currentQuantity + amount };
+				remaining -= amount;
+			}
+		}
+	}
+
+	for (let index = 0; index < next.length && remaining > 0; index += 1) {
+		if (index === preferred) {
+			continue;
+		}
+		if (getItemId(next[index]) !== itemId) {
+			continue;
+		}
+		const currentQuantity = getItemQuantity(next[index]);
+		const capacity = getMaxStack(itemId) - currentQuantity;
+		const amount = Math.min(capacity, remaining);
+		if (amount > 0) {
+			next[index] = { id: itemId, quantity: currentQuantity + amount };
+			remaining -= amount;
+		}
+	}
+
+	for (let index = 0; index < next.length && remaining > 0; index += 1) {
+		if (next[index]) {
+			continue;
+		}
+		const amount = Math.min(getMaxStack(itemId), remaining);
+		next[index] = { id: itemId, quantity: amount };
+		remaining -= amount;
+	}
+
+	return remaining === 0 ? next : null;
+};
+
+export const removeQuantityFromEntry = (
+	entry: InventoryEntry,
+	quantity: number,
+): InventoryStack | null => {
+	const itemId = getItemId(entry);
+	if (!itemId || !Number.isInteger(quantity) || quantity < 1) {
+		return normalizeEntry(entry);
+	}
+
+	const nextQuantity = getItemQuantity(entry) - quantity;
+	return nextQuantity > 0 ? { id: itemId, quantity: nextQuantity } : null;
 };
 
 export const getItemVisual = (entry: InventoryEntry): ItemVisual | null => {

@@ -1,76 +1,149 @@
-import { ref } from "vue";
+import { computed, ref } from "vue";
 import type { InventoryEntry, InventoryStack } from "../items";
 import { normalizeEntry } from "../items";
+import {
+	DAY_START_MINUTE,
+	DEFAULT_PLOTS,
+	SAVE_VERSION,
+	STORAGE_KEY,
+} from "./playerData/constants";
+import {
+	acceptContractOffer,
+	advanceClock,
+	getContractsFromSave,
+	recordContractHarvest,
+} from "./playerData/contracts";
+import {
+	createContractOffersForDay,
+	getXpForNextLevel,
+	normalizeClock,
+	normalizeJuiceSlots,
+} from "./playerData/normalizers";
+import { applyXpGain, getLevelProgress } from "./playerData/progress";
+import { normalizeSprayerCharge } from "./playerData/sprayer";
+import type {
+	ContractSave,
+	FarmTreeSave,
+	GameClockSave,
+	PlayerSave,
+	SaveData,
+	SprayerChargeSave,
+} from "./playerData/types";
 
-export type SaveData = {
-	saveVersion: number;
-	level: number;
-	coins: number;
-	inventory: InventoryEntry[];
-	backpack?: InventoryEntry[];
-	juiceSlots?: InventoryEntry[];
-	selectedSlot: number;
-	plotUnlocks?: boolean[];
-};
-
-export const STORAGE_KEY = "juice-save-v1";
-const SAVE_VERSION = 4;
-
-const DEFAULT_PLOTS = [
-	{ name: "South Field", size: "15 tiles", cost: 0 },
-	{ name: "East Field", size: "15 tiles", cost: 200 },
-	{ name: "North Field", size: "15 tiles", cost: 200 },
-];
+export type {
+	ContractSave,
+	FarmTreeSave,
+	GameClockSave,
+	PlayerSave,
+	SaveData,
+	SprayerChargeSave,
+	SulfateItemId,
+	SulfateQuality,
+} from "./playerData/types";
+export {
+	HARVEST_XP_REWARD,
+	JUICE_XP_REWARD,
+	PLANT_XP_REWARD,
+	STORAGE_KEY,
+	WATER_XP_REWARD,
+} from "./playerData/constants";
 
 export const usePlayerData = () => {
 	const level = ref(1);
+	const xp = ref(0);
 	const coins = ref(0);
+	const completedContracts = ref(0);
+	const missedContracts = ref(0);
 	const inventory = ref<Array<InventoryStack | null>>([null, null, null, null, null]);
 	const backpack = ref<Array<InventoryStack | null>>(
 		Array.from({ length: 15 }, () => null),
 	);
+	const barnStorage = ref<Array<InventoryStack | null>>(
+		Array.from({ length: 18 }, () => null),
+	);
 	const inventoryIndex = ref(0);
-	const plotUnlocks = ref<boolean[]>([true, false, false]);
+	const plotUnlocks = ref<boolean[]>([true, false, false, false]);
 	const sellSlots = ref<Array<InventoryStack | null>>(
 		Array.from({ length: 6 }, () => null),
 	);
 	const juiceSlots = ref<Array<InventoryStack | null>>(
-		Array.from({ length: 7 }, () => null),
+		Array.from({ length: 3 }, () => null),
 	);
+	const farmTrees = ref<FarmTreeSave[]>([]);
+	const playerState = ref<PlayerSave | null>(null);
+	const gameClock = ref<GameClockSave>({ day: 1, minute: DAY_START_MINUTE });
+	const contractOffers = ref<ContractSave[]>(createContractOffersForDay(1));
+	const activeContract = ref<ContractSave | null>(null);
+	const sprayerCharge = ref<SprayerChargeSave | null>(null);
 	const hasSave = ref(false);
+	const hasExistingSave = ref(false);
 	const farmPlots = DEFAULT_PLOTS;
+	const xpForNextLevel = computed(() => getXpForNextLevel(level.value));
+	const levelProgress = computed(() => getLevelProgress(xp.value, level.value));
 
 	const applySave = (data: SaveData) => {
 		level.value = data.level ?? 1;
+		xp.value = Math.max(0, Math.floor(data.xp ?? 0));
 		coins.value = data.coins ?? 0;
+		completedContracts.value = Math.max(0, Math.floor(data.completedContracts ?? 0));
+		missedContracts.value = Math.max(0, Math.floor(data.missedContracts ?? 0));
 		inventory.value = Array.from({ length: 5 }, (_, index) => {
 			return normalizeEntry(data.inventory?.[index] ?? null);
 		});
 		backpack.value = Array.from({ length: 15 }, (_, index) => {
 			return normalizeEntry(data.backpack?.[index] ?? null);
 		});
-		juiceSlots.value = Array.from({ length: 7 }, (_, index) => {
-			return normalizeEntry(data.juiceSlots?.[index] ?? null);
+		barnStorage.value = Array.from({ length: 18 }, (_, index) => {
+			return normalizeEntry(data.barnStorage?.[index] ?? null);
 		});
+		sellSlots.value = Array.from({ length: 6 }, (_, index) => {
+			return normalizeEntry(data.sellSlots?.[index] ?? null);
+		});
+		juiceSlots.value = normalizeJuiceSlots(data.juiceSlots);
 		inventoryIndex.value = Math.min(Math.max(data.selectedSlot ?? 0, 0), 4);
 		if (data.plotUnlocks && data.plotUnlocks.length === farmPlots.length) {
 			plotUnlocks.value = data.plotUnlocks.slice();
 		} else {
-			plotUnlocks.value = [true, false, false];
+			plotUnlocks.value = [true, false, false, false];
 		}
 		plotUnlocks.value[0] = true;
+		farmTrees.value = Array.isArray(data.farmTrees)
+			? data.farmTrees.map((tree) => ({ ...tree }))
+			: [];
+		playerState.value = data.playerState ? { ...data.playerState } : null;
+		gameClock.value = normalizeClock(data.gameClock);
+		const contracts = getContractsFromSave(
+			data.saveVersion,
+			data.contractOffers,
+			data.activeContract,
+			gameClock.value.day,
+		);
+		contractOffers.value = contracts.offers;
+		activeContract.value = contracts.active;
+		sprayerCharge.value = normalizeSprayerCharge(data.sprayerCharge);
 	};
 
 	const getSaveData = (): SaveData => {
 		return {
 			saveVersion: SAVE_VERSION,
 			level: level.value,
+			xp: xp.value,
 			coins: coins.value,
+			completedContracts: completedContracts.value,
+			missedContracts: missedContracts.value,
 			inventory: inventory.value,
 			backpack: backpack.value,
+			barnStorage: barnStorage.value,
+			sellSlots: sellSlots.value,
 			juiceSlots: juiceSlots.value,
 			selectedSlot: inventoryIndex.value,
 			plotUnlocks: plotUnlocks.value,
+			farmTrees: farmTrees.value,
+			playerState: playerState.value ?? undefined,
+			gameClock: gameClock.value,
+			contractOffers: contractOffers.value,
+			activeContract: activeContract.value,
+			sprayerCharge: sprayerCharge.value,
 		};
 	};
 
@@ -78,32 +151,45 @@ export const usePlayerData = () => {
 		const data = getSaveData();
 		localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
 		hasSave.value = true;
+		hasExistingSave.value = true;
 	};
 
 	const loadState = async () => {
 		const saved = localStorage.getItem(STORAGE_KEY);
 		if (saved) {
-			const parsed = JSON.parse(saved) as SaveData;
-			if (parsed.saveVersion <= SAVE_VERSION) {
-				applySave(parsed);
-				hasSave.value = true;
-				if (parsed.saveVersion !== SAVE_VERSION) {
-					saveState();
+			try {
+				const parsed = JSON.parse(saved) as SaveData;
+				if ((parsed.saveVersion ?? 0) <= SAVE_VERSION) {
+					applySave(parsed);
+					hasSave.value = true;
+					hasExistingSave.value = true;
+					if (parsed.saveVersion !== SAVE_VERSION) {
+						saveState();
+					}
+					return;
 				}
-				return;
+			} catch {
+				localStorage.removeItem(STORAGE_KEY);
 			}
 		}
 
 		hasSave.value = false;
+		hasExistingSave.value = false;
 
-		const response = await fetch("/data/save.json");
-		if (!response.ok) {
-			return;
+		try {
+			const response = await fetch("/data/save.json");
+			if (!response.ok) {
+				return;
+			}
+
+			const data = (await response.json()) as SaveData;
+			applySave(data);
+			saveState();
+			hasExistingSave.value = false;
+		} catch {
+			hasSave.value = false;
+			hasExistingSave.value = false;
 		}
-
-		const data = (await response.json()) as SaveData;
-		applySave(data);
-		saveState();
 	};
 
 	const setLevel = (nextLevel: number) => {
@@ -118,7 +204,16 @@ export const usePlayerData = () => {
 
 	const addLevel = (delta: number) => {
 		level.value = Math.max(1, level.value + delta);
+		xp.value = Math.min(xp.value, getXpForNextLevel(level.value) - 1);
 		saveState();
+	};
+
+	const addXp = (amount: number) => {
+		const result = applyXpGain(xp.value, level.value, amount);
+		xp.value = result.xp;
+		level.value = result.level;
+		saveState();
+		return result;
 	};
 
 	const setCoins = (nextCoins: number) => {
@@ -137,6 +232,59 @@ export const usePlayerData = () => {
 		saveState();
 	};
 
+	const setFarmTrees = (trees: FarmTreeSave[]) => {
+		farmTrees.value = trees.map((tree) => ({ ...tree }));
+		saveState();
+	};
+
+	const setPlayerState = (nextPlayerState: PlayerSave) => {
+		playerState.value = { ...nextPlayerState };
+		saveState();
+	};
+
+	const setSprayerCharge = (nextCharge: SprayerChargeSave | null) => {
+		sprayerCharge.value = nextCharge ? { ...nextCharge } : null;
+		saveState();
+	};
+
+	const advanceTime = (minutes: number) => {
+		const next = advanceClock(gameClock.value, minutes, activeContract.value);
+		if (next.offers) {
+			contractOffers.value = next.offers;
+		}
+		missedContracts.value += next.missedDelta;
+		activeContract.value = next.activeContract;
+		gameClock.value = next.clock;
+		saveState();
+	};
+
+	const recordHarvest = (fruitId: string, quantity: number) => {
+		const result = recordContractHarvest(activeContract.value, fruitId, quantity);
+		activeContract.value = result.nextContract;
+		if (result.completed) {
+			completedContracts.value += 1;
+			coins.value += result.reward;
+		}
+		saveState();
+		return { completed: result.completed, reward: result.reward };
+	};
+
+	const acceptContract = (contractId: string) => {
+		const nextContract = acceptContractOffer(
+			contractOffers.value,
+			contractId,
+			gameClock.value,
+			activeContract.value,
+		);
+		if (!nextContract) {
+			return false;
+		}
+
+		activeContract.value = nextContract;
+		saveState();
+		return true;
+	};
+
 	const isPlotUnlocked = (index: number) => {
 		if (index === 0) {
 			return true;
@@ -146,12 +294,12 @@ export const usePlayerData = () => {
 
 	const unlockPlot = (index: number) => {
 		if (isPlotUnlocked(index)) {
-			return;
+			return false;
 		}
 
 		const plot = farmPlots[index];
 		if (coins.value < plot.cost) {
-			return;
+			return false;
 		}
 
 		coins.value -= plot.cost;
@@ -159,6 +307,7 @@ export const usePlayerData = () => {
 			return idx === index ? true : value;
 		});
 		saveState();
+		return true;
 	};
 
 	const canUnlockPlot = (index: number) => {
@@ -170,14 +319,27 @@ export const usePlayerData = () => {
 
 	return {
 		level,
+		xp,
+		xpForNextLevel,
+		levelProgress,
 		coins,
+		completedContracts,
+		missedContracts,
 		inventory,
 		backpack,
+		barnStorage,
 		inventoryIndex,
 		plotUnlocks,
 		sellSlots,
 		juiceSlots,
+		farmTrees,
+		playerState,
+		gameClock,
+		contractOffers,
+		activeContract,
+		sprayerCharge,
 		hasSave,
+		hasExistingSave,
 		farmPlots,
 		applySave,
 		getSaveData,
@@ -186,8 +348,15 @@ export const usePlayerData = () => {
 		setLevel,
 		addCoins,
 		addLevel,
+		addXp,
 		setCoins,
 		setInventorySlot,
+		setFarmTrees,
+		setPlayerState,
+		setSprayerCharge,
+		advanceTime,
+		recordHarvest,
+		acceptContract,
 		isPlotUnlocked,
 		unlockPlot,
 		canUnlockPlot,

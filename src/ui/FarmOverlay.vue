@@ -28,6 +28,10 @@ const unlockPlot = (index) => {
                     <div class="farm-title">{{ labels.title }}</div>
                     <div class="farm-subtitle">{{ labels.subtitle }}</div>
                 </div>
+                <div class="farm-coin-badge">
+                    <span class="hud-coins-icon">◎</span>
+                    <span>{{ coins }}</span>
+                </div>
                 <button
                     class="farm-close"
                     type="button"
@@ -44,22 +48,28 @@ const unlockPlot = (index) => {
                         v-for="(plot, index) in farmPlots"
                         :key="plot.name"
                         class="farm-nav-button"
-                        :class="{ 'is-active': selectedPlotIndex === index }"
+                        :class="{
+                            'is-active': selectedPlotIndex === index,
+                            'is-locked': !isPlotUnlocked(index),
+                        }"
                         type="button"
                         @click="selectPlot(index)"
                     >
+                        <span class="farm-nav-dot"></span>
                         <span class="farm-nav-name">{{ plot.name }}</span>
                         <span class="farm-nav-meta">
                             {{ isPlotUnlocked(index) ? labels.unlocked : labels.locked }}
                         </span>
                     </button>
                 </div>
-                <div class="farm-minimap" aria-hidden="true">
+                <div class="farm-minimap">
+                    <div class="farm-map-path"></div>
                     <button
                         v-for="(plot, index) in farmPlots"
                         :key="`${plot.name}-mini`"
                         class="farm-plot"
                         :class="{
+                            [`is-plot-${index + 1}`]: true,
                             'is-selected': selectedPlotIndex === index,
                             'is-locked': !isPlotUnlocked(index),
                         }"
@@ -67,6 +77,10 @@ const unlockPlot = (index) => {
                         @click="selectPlot(index)"
                     >
                         <span class="farm-plot-label">{{ index + 1 }}</span>
+                        <span class="farm-plot-name">{{ plot.name }}</span>
+                        <span class="farm-plot-status">
+                            {{ isPlotUnlocked(index) ? labels.unlocked : labels.locked }}
+                        </span>
                     </button>
                 </div>
                 <div class="farm-detail">

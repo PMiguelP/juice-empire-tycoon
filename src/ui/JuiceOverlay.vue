@@ -1,4 +1,8 @@
 <script setup>
+import InventoryGrid from "./InventoryGrid.vue";
+import InventorySlot from "./InventorySlot.vue";
+import ItemIcon from "./ItemIcon.vue";
+
 defineProps({
 	open: { type: Boolean, required: true },
 	labels: { type: Object, required: true },
@@ -23,13 +27,14 @@ const emit = defineEmits([
 	"drag-start",
 	"drag-end",
 	"drop",
+	"craft",
 ]);
 
 const slotLabel = (index, labels, recipe) => {
-	if (index < 3) {
+	if (index === 0) {
 		return `${labels.fruit}: ${recipe.fruit}`;
 	}
-	if (index < 5) {
+	if (index === 1) {
 		return labels.water;
 	}
 	return labels.bottle;
@@ -75,55 +80,58 @@ const slotLabel = (index, labels, recipe) => {
 					<div class="juice-section-title">{{ labels.ingredients }}</div>
 					<div class="juice-requirements">
 						<div class="juice-requirement">
-							<span>{{ labels.fruitSlots }}</span>
+							<span>{{ recipes[selectedRecipeIndex].fruitCount ?? 3 }}x {{ labels.fruit }}</span>
 							<strong>{{ recipes[selectedRecipeIndex].fruit }}</strong>
 						</div>
 						<div class="juice-requirement">
-							<span>{{ labels.waterSlots }}</span>
-							<strong>{{ itemLabel("water") }}</strong>
+							<span>{{ recipes[selectedRecipeIndex].waterCount ?? 1 }}x {{ labels.water }}</span>
+							<strong>{{ itemLabel("filled-water-jug") }}</strong>
 						</div>
 						<div class="juice-requirement">
-							<span>{{ labels.bottleSlots }}</span>
+							<span>{{ recipes[selectedRecipeIndex].bottleCount ?? 1 }}x {{ labels.bottle }}</span>
 							<strong>{{ itemLabel("empty-bottle") }}</strong>
 						</div>
 					</div>
 
 					<div class="juice-section-title">{{ labels.slots }}</div>
 					<div class="juice-slots">
-						<button
+						<InventorySlot
 							v-for="(item, index) in juiceSlots"
 							:key="`juice-slot-${index}`"
 							class="juice-slot"
-							:class="{ 'is-draggable': Boolean(item) }"
-							type="button"
-							draggable="true"
-							@dragstart="emit('drag-start', 'juice', index)"
-							@dragend="emit('drag-end')"
-							@dragover.prevent
-							@drop="emit('drop', 'juice', index)"
+							:item="item"
+							:index="index"
+							:show-index="false"
+							:empty-label="slotLabel(index, labels, recipes[selectedRecipeIndex])"
+							:item-label="itemLabel"
+							:item-visual="itemVisual"
+							:item-quantity="itemQuantity"
+							:item-max="itemMax"
+							@drag-start="emit('drag-start', 'juice', index)"
+							@drag-end="emit('drag-end')"
+							@drop="emit('drop', 'juice', index, $event)"
 						>
-							<span v-if="item" class="item-stack">
-								<span
-									class="item-token"
-									:style="{
-										'--item-color': itemVisual(item).color,
-										'--item-accent': itemVisual(item).accent,
-									}"
-								>
-									{{ itemVisual(item).symbol }}
+							<template #content>
+								<span v-if="item" class="item-stack">
+									<ItemIcon :visual="itemVisual(item)" />
+									<span class="juice-slot-item">{{ itemLabel(item) }}</span>
+									<span class="item-quantity">
+										{{ itemQuantity(item) }}/{{ itemMax(item) }}
+									</span>
 								</span>
-								<span class="juice-slot-item">{{ itemLabel(item) }}</span>
-								<span class="item-quantity">
-									{{ itemQuantity(item) }}/{{ itemMax(item) }}
+								<span v-else class="inventory-cell-empty-label">
+									{{ slotLabel(index, labels, recipes[selectedRecipeIndex]) }}
 								</span>
-							</span>
-							<span class="juice-slot-label">
-								{{ slotLabel(index, labels, recipes[selectedRecipeIndex]) }}
-							</span>
-						</button>
+							</template>
+							<template #footer>
+								<span class="juice-slot-label">
+									{{ slotLabel(index, labels, recipes[selectedRecipeIndex]) }}
+								</span>
+							</template>
+						</InventorySlot>
 					</div>
 
-					<button class="juice-action" type="button">
+					<button class="juice-action" type="button" @click="emit('craft')">
 						{{ labels.action }}
 					</button>
 					<div class="juice-note">{{ labels.closeHint }}</div>
@@ -132,80 +140,44 @@ const slotLabel = (index, labels, recipe) => {
 				<div class="juice-inventory">
 					<div class="inventory-backpack">
 						<div class="inventory-section-title">{{ labels.backpack }}</div>
-						<div class="inventory-grid">
-							<button
+						<InventoryGrid>
+							<InventorySlot
 								v-for="(item, index) in backpack"
 								:key="`juice-backpack-${index}`"
-								class="inventory-cell"
-								:class="{
-									'is-selected': selectedBackpackIndex === index,
-									'is-draggable': Boolean(item),
-								}"
-								type="button"
-								@click="emit('select-backpack', index)"
-								draggable="true"
-								@dragstart="emit('drag-start', 'backpack', index)"
-								@dragend="emit('drag-end')"
-								@dragover.prevent
-								@drop="emit('drop', 'backpack', index)"
-							>
-								<span v-if="item" class="item-stack">
-									<span
-										class="item-token"
-										:style="{
-											'--item-color': itemVisual(item).color,
-											'--item-accent': itemVisual(item).accent,
-										}"
-									>
-										{{ itemVisual(item).symbol }}
-									</span>
-									<span class="inventory-cell-label">{{ itemLabel(item) }}</span>
-									<span class="item-quantity">
-										{{ itemQuantity(item) }}/{{ itemMax(item) }}
-									</span>
-								</span>
-								<span class="inventory-cell-index">{{ index + 1 }}</span>
-							</button>
-						</div>
+								:item="item"
+								:index="index"
+								:selected="selectedBackpackIndex === index"
+								:item-label="itemLabel"
+								:item-visual="itemVisual"
+								:item-quantity="itemQuantity"
+								:item-max="itemMax"
+								@activate="emit('select-backpack', index)"
+								@drag-start="emit('drag-start', 'backpack', index)"
+								@drag-end="emit('drag-end')"
+								@drop="emit('drop', 'backpack', index, $event)"
+							/>
+						</InventoryGrid>
 					</div>
 
 					<div class="inventory-quickbar">
 						<div class="inventory-section-title">{{ labels.quickbar }}</div>
-						<div class="inventory-quickbar-grid">
-							<button
+						<InventoryGrid variant="quickbar">
+							<InventorySlot
 								v-for="(item, index) in inventory"
 								:key="`juice-quickbar-${index}`"
-								class="inventory-cell"
-								:class="{
-									'is-selected': inventoryIndex === index,
-									'is-draggable': Boolean(item),
-								}"
-								type="button"
-								@click="emit('assign-quickbar', index)"
-								draggable="true"
-								@dragstart="emit('drag-start', 'quickbar', index)"
-								@dragend="emit('drag-end')"
-								@dragover.prevent
-								@drop="emit('drop', 'quickbar', index)"
-							>
-								<span v-if="item" class="item-stack">
-									<span
-										class="item-token"
-										:style="{
-											'--item-color': itemVisual(item).color,
-											'--item-accent': itemVisual(item).accent,
-										}"
-									>
-										{{ itemVisual(item).symbol }}
-									</span>
-									<span class="inventory-cell-label">{{ itemLabel(item) }}</span>
-									<span class="item-quantity">
-										{{ itemQuantity(item) }}/{{ itemMax(item) }}
-									</span>
-								</span>
-								<span class="inventory-cell-index">{{ index + 1 }}</span>
-							</button>
-						</div>
+								:item="item"
+								:index="index"
+								:selected="inventoryIndex === index"
+								:item-label="itemLabel"
+								:item-visual="itemVisual"
+								:item-quantity="itemQuantity"
+								:item-max="itemMax"
+								@activate="emit('assign-quickbar', index)"
+								@drag-start="emit('drag-start', 'quickbar', index)"
+								@drag-end="emit('drag-end')"
+								@drop="emit('drop', 'quickbar', index, $event)"
+							/>
+						</InventoryGrid>
 					</div>
 				</div>
 			</div>

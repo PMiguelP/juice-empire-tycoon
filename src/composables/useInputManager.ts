@@ -1,139 +1,222 @@
 import type { Ref } from "vue";
 
 type MenuMode = "main" | "pause";
+type OverlayKey =
+	| "farm"
+	| "inventory"
+	| "barnChest"
+	| "shop"
+	| "sell"
+	| "juice"
+	| "contracts"
+	| "water"
+	| "sulfate";
 
 type InputManagerOptions = {
+	enabled?: Ref<boolean>;
 	mainMenuOpen?: Ref<boolean>;
 	menuOpen: Ref<boolean>;
 	pauseMenuOpen: Ref<boolean>;
 	menuMode: Ref<MenuMode>;
 	farmMenuOpen: Ref<boolean>;
 	inventoryMenuOpen: Ref<boolean>;
+	barnChestOpen: Ref<boolean>;
 	shopMenuOpen: Ref<boolean>;
 	sellMenuOpen: Ref<boolean>;
 	juiceMenuOpen: Ref<boolean>;
+	contractsMenuOpen: Ref<boolean>;
+	waterMinigameOpen: Ref<boolean>;
+	sulfateMinigameOpen: Ref<boolean>;
 	selectedBackpackIndex: Ref<number | null>;
 	inventoryIndex: Ref<number>;
 	hasSave: Ref<boolean>;
 	saveState: () => void;
 	loadState: () => Promise<void>;
 	storageKey: string;
+	activateRadialAction?: () => void;
+	openSulfateMixer?: () => void;
+	currentMapKey?: Ref<string>;
+	pointerPlantSeedId?: Ref<string | null>;
+	cancelPointerPlanting?: () => void;
 };
 
+const ESCAPE_CLOSE_ORDER: OverlayKey[] = [
+	"sulfate",
+	"water",
+	"juice",
+	"sell",
+	"shop",
+	"contracts",
+	"inventory",
+	"barnChest",
+	"farm",
+];
+
+const SELECTION_OVERLAYS = new Set<OverlayKey>([
+	"inventory",
+	"barnChest",
+	"shop",
+	"sell",
+	"juice",
+]);
+
 export const useInputManager = (options: InputManagerOptions) => {
+	const overlays: Record<OverlayKey, Ref<boolean>> = {
+		farm: options.farmMenuOpen,
+		inventory: options.inventoryMenuOpen,
+		barnChest: options.barnChestOpen,
+		shop: options.shopMenuOpen,
+		sell: options.sellMenuOpen,
+		juice: options.juiceMenuOpen,
+		contracts: options.contractsMenuOpen,
+		water: options.waterMinigameOpen,
+		sulfate: options.sulfateMinigameOpen,
+	};
+
+	const closeGameplayOverlays = (except?: OverlayKey) => {
+		options.menuOpen.value = false;
+		options.pauseMenuOpen.value = false;
+
+		for (const [key, overlay] of Object.entries(overlays) as Array<
+			[OverlayKey, Ref<boolean>]
+		>) {
+			if (key !== except) {
+				overlay.value = false;
+			}
+		}
+	};
+
+	const toggleOverlay = (key: OverlayKey, clearSelection = false) => {
+		const overlay = overlays[key];
+		overlay.value = !overlay.value;
+
+		if (clearSelection) {
+			options.selectedBackpackIndex.value = null;
+		}
+
+		if (overlay.value) {
+			closeGameplayOverlays(key);
+		}
+	};
+
+	const closeFirstOpenOverlay = () => {
+		for (const key of ESCAPE_CLOSE_ORDER) {
+			if (!overlays[key].value) {
+				continue;
+			}
+
+			overlays[key].value = false;
+			if (SELECTION_OVERLAYS.has(key)) {
+				options.selectedBackpackIndex.value = null;
+			}
+			return true;
+		}
+
+		if (options.menuOpen.value) {
+			options.menuOpen.value = false;
+			return true;
+		}
+
+		return false;
+	};
+
 	const handleKey = (event: KeyboardEvent) => {
+		const pressedKey =
+			typeof event.key === "string" ? event.key.toLowerCase() : "";
+		const isKey = (code: string, key: string, keyCode: number) => {
+			return event.code === code || pressedKey === key || event.keyCode === keyCode;
+		};
+		const canOpenInMap = (mapKey: string) => {
+			return !options.currentMapKey || options.currentMapKey.value === mapKey;
+		};
+
+		if (options.enabled && !options.enabled.value) {
+			return;
+		}
+
 		if (options.mainMenuOpen?.value) {
 			return;
 		}
 
-		if (event.code === "KeyE" && !event.repeat) {
+		if (isKey("KeyE", "e", 69) && !event.repeat) {
+			if (options.waterMinigameOpen.value || options.sulfateMinigameOpen.value) {
+				return;
+			}
+			if (options.menuOpen.value) {
+				options.activateRadialAction?.();
+				options.menuOpen.value = false;
+				return;
+			}
+			options.cancelPointerPlanting?.();
+			closeGameplayOverlays();
 			options.menuOpen.value = !options.menuOpen.value;
-		}
-
-		if (event.code === "KeyK" && !event.repeat) {
-			options.farmMenuOpen.value = !options.farmMenuOpen.value;
-			if (options.farmMenuOpen.value) {
-				options.menuOpen.value = false;
-				options.pauseMenuOpen.value = false;
-				options.inventoryMenuOpen.value = false;
-				options.shopMenuOpen.value = false;
-				options.sellMenuOpen.value = false;
-				options.juiceMenuOpen.value = false;
-			}
 			return;
 		}
 
-		if (event.code === "KeyG" && !event.repeat) {
-			options.inventoryMenuOpen.value = !options.inventoryMenuOpen.value;
-			options.selectedBackpackIndex.value = null;
-			if (options.inventoryMenuOpen.value) {
-				options.menuOpen.value = false;
-				options.pauseMenuOpen.value = false;
-				options.farmMenuOpen.value = false;
-				options.shopMenuOpen.value = false;
-				options.sellMenuOpen.value = false;
-				options.juiceMenuOpen.value = false;
+		if (isKey("KeyK", "k", 75) && !event.repeat) {
+			if (!canOpenInMap("camera")) {
+				return;
 			}
+			toggleOverlay("farm");
+			return;
+		}
+
+		if (isKey("KeyG", "g", 71) && !event.repeat) {
+			toggleOverlay("inventory", true);
 			return;
 		}
 
 		if (
-			(event.code === "KeyL" || event.key?.toLowerCase?.() === "l") &&
+			isKey("KeyL", "l", 76) &&
 			!event.repeat
 		) {
-			options.shopMenuOpen.value = !options.shopMenuOpen.value;
-			options.selectedBackpackIndex.value = null;
-			if (options.shopMenuOpen.value) {
-				options.menuOpen.value = false;
-				options.pauseMenuOpen.value = false;
-				options.farmMenuOpen.value = false;
-				options.inventoryMenuOpen.value = false;
-				options.sellMenuOpen.value = false;
-				options.juiceMenuOpen.value = false;
+			if (!canOpenInMap("mercadocompra")) {
+				return;
 			}
+			toggleOverlay("shop", true);
 			return;
 		}
 
 		if (
-			(event.code === "KeyP" ||
-				event.key?.toLowerCase?.() === "p" ||
-				event.keyCode === 80) &&
+			isKey("KeyP", "p", 80) &&
 			!event.repeat
 		) {
-			options.sellMenuOpen.value = !options.sellMenuOpen.value;
-			options.selectedBackpackIndex.value = null;
-			if (options.sellMenuOpen.value) {
-				options.menuOpen.value = false;
-				options.pauseMenuOpen.value = false;
-				options.farmMenuOpen.value = false;
-				options.inventoryMenuOpen.value = false;
-				options.shopMenuOpen.value = false;
-				options.juiceMenuOpen.value = false;
+			if (!canOpenInMap("mercadovenda")) {
+				return;
 			}
+			toggleOverlay("sell", true);
 			return;
 		}
 
-		if (event.code === "KeyJ" && !event.repeat) {
-			options.juiceMenuOpen.value = !options.juiceMenuOpen.value;
-			options.selectedBackpackIndex.value = null;
-			if (options.juiceMenuOpen.value) {
-				options.menuOpen.value = false;
-				options.pauseMenuOpen.value = false;
-				options.farmMenuOpen.value = false;
-				options.inventoryMenuOpen.value = false;
-				options.shopMenuOpen.value = false;
-				options.sellMenuOpen.value = false;
+		if (isKey("KeyJ", "j", 74) && !event.repeat) {
+			if (!canOpenInMap("centrifugadora")) {
+				return;
 			}
+			toggleOverlay("juice", true);
+			return;
+		}
+
+		if (isKey("KeyN", "n", 78) && !event.repeat) {
+			event.preventDefault();
+			event.stopPropagation();
+			toggleOverlay("water");
+			return;
+		}
+
+		if (isKey("KeyM", "m", 77) && !event.repeat) {
+			event.preventDefault();
+			event.stopPropagation();
+			options.openSulfateMixer?.();
 			return;
 		}
 
 		if (event.code === "Escape") {
-			if (options.juiceMenuOpen.value) {
-				options.juiceMenuOpen.value = false;
-				options.selectedBackpackIndex.value = null;
+			if (options.pointerPlantSeedId?.value) {
+				options.cancelPointerPlanting?.();
 				return;
 			}
-			if (options.sellMenuOpen.value) {
-				options.sellMenuOpen.value = false;
-				options.selectedBackpackIndex.value = null;
-				return;
-			}
-			if (options.shopMenuOpen.value) {
-				options.shopMenuOpen.value = false;
-				options.selectedBackpackIndex.value = null;
-				return;
-			}
-			if (options.inventoryMenuOpen.value) {
-				options.inventoryMenuOpen.value = false;
-				options.selectedBackpackIndex.value = null;
-				return;
-			}
-			if (options.farmMenuOpen.value) {
-				options.farmMenuOpen.value = false;
-				return;
-			}
-			if (options.menuOpen.value) {
-				options.menuOpen.value = false;
+
+			if (closeFirstOpenOverlay()) {
 				return;
 			}
 
@@ -142,7 +225,7 @@ export const useInputManager = (options: InputManagerOptions) => {
 			return;
 		}
 
-		if (event.code === "KeyR" && event.shiftKey) {
+		if (isKey("KeyR", "r", 82) && event.shiftKey) {
 			localStorage.removeItem(options.storageKey);
 			options.hasSave.value = false;
 			void options.loadState();

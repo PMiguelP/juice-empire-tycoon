@@ -1,5 +1,8 @@
 <script setup>
 import { ref } from "vue";
+import InventoryGrid from "./InventoryGrid.vue";
+import InventorySlot from "./InventorySlot.vue";
+import ItemIcon from "./ItemIcon.vue";
 
 const props = defineProps({
     open: { type: Boolean, required: true },
@@ -46,7 +49,7 @@ const normalizedQuantity = () => {
 const canBuySelected = () => {
     const item = selectedShopItem();
     const amount = normalizedQuantity();
-    if (!item) {
+    if (!item || item.locked) {
         return false;
     }
     return (
@@ -60,6 +63,7 @@ const canBuySelected = () => {
 const canDragSelectedQuantity = (item) => {
     const amount = normalizedQuantity();
     return (
+        !item.locked &&
         Number.isInteger(amount) &&
         amount >= 1 &&
         amount <= props.itemMax(item.id) &&
@@ -83,13 +87,65 @@ const buySelected = () => {
     emit("buy", item.id, item.price, normalizedQuantity());
 };
 
-const selectBackpackSlot = (index) => {
-    emit("select-backpack", index);
+const entryId = (entry) => {
+    if (!entry) {
+        return null;
+    }
+    return typeof entry === "string" ? entry : entry.id;
 };
 
-const assignToQuickbar = (index) => {
-    emit("assign-quickbar", index);
+const entryQuantity = (entry) => {
+    if (!entry) {
+        return 0;
+    }
+    return typeof entry === "string" ? 1 : entry.quantity;
 };
+
+const availableBackpackRoom = (itemId) => {
+    return props.backpack.reduce((total, entry) => {
+        const currentId = entryId(entry);
+        if (!entry) {
+            return total + props.itemMax(itemId);
+        }
+        if (currentId === itemId) {
+            return total + props.itemMax(itemId) - entryQuantity(entry);
+        }
+        return total;
+    }, 0);
+};
+
+const buyMax = (item) => {
+    if (item.locked) {
+        return;
+    }
+
+    const maxAffordable = Math.floor(props.coins / item.price);
+    const amount = Math.min(
+        props.itemMax(item.id),
+        maxAffordable,
+        availableBackpackRoom(item.id),
+    );
+    if (amount < 1) {
+        return;
+    }
+    emit("buy", item.id, item.price, amount);
+};
+
+const handleShopItemClick = (event, item) => {
+    selectShopItem(item.id);
+    if (event.shiftKey && !item.locked) {
+        buyMax(item);
+    }
+};
+
+const handleShopDragStart = (event, item) => {
+    if (!canDragSelectedQuantity(item)) {
+        event.preventDefault();
+        return;
+    }
+    emit("shop-drag-start", item.id, normalizedQuantity());
+};
+
 </script>
 
 <template>
@@ -126,34 +182,24 @@ const assignToQuickbar = (index) => {
                             :class="{
                                 'is-selected': selectedShopItemId === item.id,
                                 'is-draggable': canDragSelectedQuantity(item),
+                                'is-locked': item.locked,
                             }"
                             type="button"
-                            draggable="true"
-                            @click="selectShopItem(item.id)"
-                            @dragstart="
-                                emit(
-                                    'shop-drag-start',
-                                    item.id,
-                                    canDragSelectedQuantity(item)
-                                        ? normalizedQuantity()
-                                        : 1,
-                                )
-                            "
+                            :draggable="canDragSelectedQuantity(item)"
+                            @click="handleShopItemClick($event, item)"
+                            @dragstart="handleShopDragStart($event, item)"
                             @dragend="emit('drag-end')"
                         >
                             <span class="item-stack">
-                                <span
-                                    class="item-token"
-                                    :style="{
-                                        '--item-color': itemVisual(item.id).color,
-                                        '--item-accent': itemVisual(item.id).accent,
-                                    }"
-                                >
-                                    {{ itemVisual(item.id).symbol }}
-                                </span>
+                                <ItemIcon :visual="itemVisual(item.id)" />
                                 <span class="inventory-cell-label">{{ itemLabel(item.id) }}</span>
                                 <span class="item-quantity">
-                                    {{ item.price }} {{ labels.coins }}
+                                    <template v-if="item.locked">
+                                        {{ labels.unlockLevel(item.unlockLevel) }}
+                                    </template>
+                                    <template v-else>
+                                        {{ item.price }} {{ labels.coins }}
+                                    </template>
                                 </span>
                             </span>
                             <span class="inventory-cell-index">{{ itemMax(item.id) }}</span>
@@ -165,21 +211,18 @@ const assignToQuickbar = (index) => {
                     <div class="shop-section-title">{{ labels.quantity }}</div>
                     <div class="shop-selected">
                         <template v-if="selectedShopItem()">
-                            <span
-                                class="item-token"
-                                :style="{
-                                    '--item-color': itemVisual(selectedShopItem().id).color,
-                                    '--item-accent': itemVisual(selectedShopItem().id).accent,
-                                }"
-                            >
-                                {{ itemVisual(selectedShopItem().id).symbol }}
-                            </span>
+                            <ItemIcon :visual="itemVisual(selectedShopItem().id)" />
                             <span class="shop-selected-name">
                                 {{ itemLabel(selectedShopItem().id) }}
                             </span>
                             <span class="shop-selected-meta">
-                                {{ selectedShopItem().price }} {{ labels.coins }}
-                                / {{ labels.max }} {{ itemMax(selectedShopItem().id) }}
+                                <template v-if="selectedShopItem().locked">
+                                    {{ labels.unlockLevel(selectedShopItem().unlockLevel) }}
+                                </template>
+                                <template v-else>
+                                    {{ selectedShopItem().price }} {{ labels.coins }}
+                                    / {{ labels.max }} {{ itemMax(selectedShopItem().id) }}
+                                </template>
                             </span>
                         </template>
                         <span v-else class="shop-selected-empty">
@@ -204,85 +247,50 @@ const assignToQuickbar = (index) => {
                     >
                         {{ labels.buy }}
                     </button>
+                    <div class="shop-note">{{ labels.shiftHint }}</div>
                 </div>
 
                 <div class="shop-inventory">
                     <div class="inventory-backpack">
                         <div class="inventory-section-title">{{ labels.backpack }}</div>
-                        <div class="inventory-grid">
-                            <button
+                        <InventoryGrid>
+                            <InventorySlot
                                 v-for="(item, index) in backpack"
                                 :key="`shop-backpack-${index}`"
-                                class="inventory-cell shop-grid-cell"
-                                :class="{
-                                    'is-selected': selectedBackpackIndex === index,
-                                    'is-draggable': Boolean(item),
-                                }"
-                                type="button"
-                                draggable="true"
-                                @click="selectBackpackSlot(index)"
-                                @dragstart="emit('drag-start', 'backpack', index)"
-                                @dragend="emit('drag-end')"
-                                @dragover.prevent
-                                @drop="emit('drop', 'backpack', index)"
-                            >
-                                <span v-if="item" class="item-stack">
-                                    <span
-                                        class="item-token"
-                                        :style="{
-                                            '--item-color': itemVisual(item).color,
-                                            '--item-accent': itemVisual(item).accent,
-                                        }"
-                                    >
-                                        {{ itemVisual(item).symbol }}
-                                    </span>
-                                    <span class="inventory-cell-label">{{ itemLabel(item) }}</span>
-                                    <span class="item-quantity">
-                                        {{ itemQuantity(item) }}/{{ itemMax(item) }}
-                                    </span>
-                                </span>
-                                <span class="inventory-cell-index">{{ index + 1 }}</span>
-                            </button>
-                        </div>
+                                :item="item"
+                                :index="index"
+                                :selected="selectedBackpackIndex === index"
+                                :item-label="itemLabel"
+                                :item-visual="itemVisual"
+                                :item-quantity="itemQuantity"
+                                :item-max="itemMax"
+                                @activate="emit('select-backpack', index)"
+                                @drag-start="emit('drag-start', 'backpack', index)"
+                                @drag-end="emit('drag-end')"
+                                @drop="emit('drop', 'backpack', index, $event)"
+                            />
+                        </InventoryGrid>
                     </div>
 
                     <div class="inventory-quickbar">
                         <div class="inventory-section-title">{{ labels.quickbar }}</div>
-                        <div class="inventory-quickbar-grid">
-                            <button
+                        <InventoryGrid variant="quickbar">
+                            <InventorySlot
                                 v-for="(item, index) in inventory"
                                 :key="`shop-quickbar-${index}`"
-                                class="inventory-cell shop-grid-cell"
-                                :class="{
-                                    'is-selected': inventoryIndex === index,
-                                    'is-draggable': Boolean(item),
-                                }"
-                                type="button"
-                                draggable="true"
-                                @click="assignToQuickbar(index)"
-                                @dragstart="emit('drag-start', 'quickbar', index)"
-                                @dragend="emit('drag-end')"
-                                @dragover.prevent
-                                @drop="emit('drop', 'quickbar', index)"
-                            >
-                                <span v-if="item" class="item-stack">
-                                    <span
-                                        class="item-token"
-                                        :style="{
-                                            '--item-color': itemVisual(item).color,
-                                            '--item-accent': itemVisual(item).accent,
-                                        }"
-                                    >
-                                        {{ itemVisual(item).symbol }}
-                                    </span>
-                                    <span class="inventory-cell-label">{{ itemLabel(item) }}</span>
-                                    <span class="item-quantity">
-                                        {{ itemQuantity(item) }}/{{ itemMax(item) }}
-                                    </span>
-                                </span>
-                                <span class="inventory-cell-index">{{ index + 1 }}</span>
-                            </button>
-                        </div>
+                                :item="item"
+                                :index="index"
+                                :selected="inventoryIndex === index"
+                                :item-label="itemLabel"
+                                :item-visual="itemVisual"
+                                :item-quantity="itemQuantity"
+                                :item-max="itemMax"
+                                @activate="emit('assign-quickbar', index)"
+                                @drag-start="emit('drag-start', 'quickbar', index)"
+                                @drag-end="emit('drag-end')"
+                                @drop="emit('drop', 'quickbar', index, $event)"
+                            />
+                        </InventoryGrid>
                     </div>
                 </div>
 

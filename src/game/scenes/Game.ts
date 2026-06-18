@@ -1,335 +1,238 @@
 import Phaser from "phaser";
+import type { FarmTreeSave, PlayerSave } from "../../composables/usePlayerData";
 import { EventBus } from "../EventBus";
+import { InteractionManager } from "./game/InteractionManager";
+import { MapManager } from "./game/MapManager";
+import { PlayerManager } from "./game/PlayerManager";
+import { TreeManager } from "./game/TreeManager";
+import type { GameSceneData, PlantTarget, SulfateQuality } from "./game/types";
+
+type PlantRequestPayload = {
+	seedId?: string;
+	target?: PlantTarget;
+	onResult?: (success: boolean) => void;
+};
+
+type HarvestRequestPayload = {
+	hasScissors?: boolean;
+	onHarvest?: (fruitId: string, quantity: number) => boolean;
+};
+
+type ResultPayload = {
+	onResult?: (success: boolean) => void;
+};
+
+type SulfateRequestPayload = ResultPayload & {
+	quality?: SulfateQuality;
+};
+
+type AudioKey =
+	| "walk"
+	| "juice"
+	| "water-fill"
+	| "water-tree"
+	| "plant"
+	| "harvest"
+	| "fertilize"
+	| "sulfate"
+	| "error"
+	| "buy"
+	| "menu-ambience";
+
+type AudioPayload =
+	| AudioKey
+	| {
+			key: AudioKey;
+			volume?: number;
+	  };
 
 export class Game extends Phaser.Scene {
-	camera: Phaser.Cameras.Scene2D.Camera;
+	camera!: Phaser.Cameras.Scene2D.Camera;
 	map: Phaser.Tilemaps.Tilemap | null = null;
 	player?: Phaser.Physics.Arcade.Sprite;
-	interactKey?: Phaser.Input.Keyboard.Key;
 	currentMapKey = "mapa";
 	returnSpawn: { x: number; y: number } | null = null;
-	centrifTexts: Phaser.GameObjects.Container[] = [];
-	centrifCenters: { x: number; y: number }[] = [];
-	wasd?: {
-		up: Phaser.Input.Keyboard.Key;
-		down: Phaser.Input.Keyboard.Key;
-		left: Phaser.Input.Keyboard.Key;
-		right: Phaser.Input.Keyboard.Key;
-	};
-	levelUpKey?: Phaser.Input.Keyboard.Key;
-	lastDirection: "down" | "up" | "left" | "right" = "down";
+	suppressNextShutdownPlayerSave = false;
+
+	mapManager!: MapManager;
+	playerManager!: PlayerManager;
+	treeManager!: TreeManager;
+	interactionManager!: InteractionManager;
+	private menuAmbience?: Phaser.Sound.BaseSound;
 
 	constructor() {
 		super("Game");
 	}
 
-	create(data?: {
-		mapKey?: string;
-		spawnX?: number;
-		spawnY?: number;
-		returnSpawnX?: number;
-		returnSpawnY?: number;
-	}) {
-		this.camera = this.cameras.main;
-		this.camera.setBackgroundColor(0x88c070);
-		this.currentMapKey = data?.mapKey ?? "mapa";
+	create(data?: GameSceneData) {
+		this.mapManager = new MapManager(this);
+		this.mapManager.setup(data);
+
 		this.returnSpawn =
 			typeof data?.returnSpawnX === "number" &&
 			typeof data?.returnSpawnY === "number"
 				? { x: data.returnSpawnX, y: data.returnSpawnY }
 				: null;
-		this.centrifTexts = [];
-		this.centrifCenters = [];
 
-		// Criar o mapa
-		this.map = this.make.tilemap({ key: this.currentMapKey });
+		this.playerManager = new PlayerManager(this);
+		this.playerManager.setup(data);
 
-		const tilesetImageKeys: Record<string, string> = {
-			summer_outdoorsTileSheet: "summer_outdoorsTileSheet",
-			summer_outdoorsTileSheet2: "summer_outdoorsTileSheet2",
-			fall_Waterfalls: "fall_Waterfalls",
-			Barn: "Barn",
-			image: "image",
-			Well: "Well",
-			player: "player",
-			centrifugadora: "centrifugadora",
-		};
+		this.treeManager = new TreeManager(this);
+		this.interactionManager = new InteractionManager(this);
+		this.interactionManager.setup();
 
-		const allTilesets = this.map.tilesets
-			.map((ts) => {
-				const textureKey = tilesetImageKeys[ts.name] ?? ts.name;
-				return this.map?.addTilesetImage(ts.name, textureKey) ?? null;
-			})
-			.filter((t): t is Phaser.Tilemaps.Tileset => t !== null);
-
-		const createdLayers = this.map.layers
-			.map((layer) => this.map?.createLayer(layer.name, allTilesets) ?? null)
-			.filter((layer): layer is Phaser.Tilemaps.TilemapLayer => layer !== null);
-
-		const colisionLayer =
-			createdLayers.find((layer) => layer.layer.name === "colision") ??
-			createdLayers.find((layer) => layer.layer.name === "collision") ??
-			null;
-
-		// Esconder a layer de colisão
-		if (colisionLayer) {
-			colisionLayer.setCollisionByExclusion([-1]);
-			colisionLayer.setVisible(false);
-		}
-
-		// Ajustar câmera
-		const mapWidth = this.map.widthInPixels;
-		const mapHeight = this.map.heightInPixels;
-		this.camera.setBounds(0, 0, mapWidth, mapHeight);
-		this.camera.centerOn(mapWidth / 2, mapHeight / 2);
-		this.physics.world.setBounds(0, 0, mapWidth, mapHeight);
-
-		const zoomX = this.camera.width / mapWidth;
-		const zoomY = this.camera.height / mapHeight;
-		this.camera.setZoom(Math.max(zoomX, zoomY));
-
-		// Spawn player at `playerSpawn` object if available, otherwise center
-		let spawnX = mapWidth / 2;
-		let spawnY = mapHeight / 2;
-		const spawnLayer =
-			this.map.getObjectLayer("playerSpawn") ??
-			this.map.getObjectLayer("spawn");
-		if (spawnLayer?.objects?.length) {
-			const obj = spawnLayer.objects[0] as Phaser.Types.Tilemaps.TiledObject;
-			spawnX = (obj.x ?? spawnX) + (obj.width ? obj.width / 2 : 0);
-			spawnY = (obj.y ?? spawnY) + (obj.height ? obj.height / 2 : 0);
-		}
-		if (typeof data?.spawnX === "number" && typeof data?.spawnY === "number") {
-			spawnX = data.spawnX;
-			spawnY = data.spawnY;
-		}
-
-		this.player = this.physics.add
-			.sprite(spawnX, spawnY, "player", 0)
-			.setCollideWorldBounds(true);
-		if (colisionLayer) {
-			this.physics.add.collider(this.player, colisionLayer);
-		}
-		this.camera.startFollow(this.player, true, 0.1, 0.1);
-
-		// Interaction key (F)
-		this.interactKey = this.input.keyboard?.addKey(
-			Phaser.Input.Keyboard.KeyCodes.F,
-		);
-
-		// Build interaction prompts from object layers, depending on the active map
-		const interactionLayerName =
-			this.currentMapKey === "centrifugadora" ? "spawn" : "centrifugadora";
-		const interactionLayer = this.map.getObjectLayer(interactionLayerName);
-		if (interactionLayer?.objects) {
-			for (const obj of interactionLayer.objects) {
-				const centerX = (obj.x ?? 0) + (obj.width ? obj.width / 2 : 0);
-				const centerY = (obj.y ?? 0) + (obj.height ? obj.height / 2 : 0);
-				this.centrifCenters.push({ x: centerX, y: centerY });
-				const txt = this.createInteractionPrompt(centerX, centerY - 22);
-				this.centrifTexts.push(txt);
-			}
-		}
-
-		if (!this.anims.exists("player-walk-down")) {
-			this.anims.create({
-				key: "player-walk-down",
-				frames: this.anims.generateFrameNumbers("player", {
-					start: 0,
-					end: 3,
-				}),
-				frameRate: 8,
-				repeat: -1,
-			});
-		}
-		if (!this.anims.exists("player-walk-left")) {
-			this.anims.create({
-				key: "player-walk-left",
-				frames: this.anims.generateFrameNumbers("player", {
-					start: 12,
-					end: 15,
-				}),
-				frameRate: 8,
-				repeat: -1,
-			});
-		}
-		if (!this.anims.exists("player-walk-right")) {
-			this.anims.create({
-				key: "player-walk-right",
-				frames: this.anims.generateFrameNumbers("player", {
-					start: 4,
-					end: 7,
-				}),
-				frameRate: 8,
-				repeat: -1,
-			});
-		}
-		if (!this.anims.exists("player-walk-up")) {
-			this.anims.create({
-				key: "player-walk-up",
-				frames: this.anims.generateFrameNumbers("player", {
-					start: 8,
-					end: 11,
-				}),
-				frameRate: 8,
-				repeat: -1,
-			});
-		}
-
-		this.wasd = this.input.keyboard?.addKeys({
-			up: Phaser.Input.Keyboard.KeyCodes.W,
-			down: Phaser.Input.Keyboard.KeyCodes.S,
-			left: Phaser.Input.Keyboard.KeyCodes.A,
-			right: Phaser.Input.Keyboard.KeyCodes.D,
-		}) as {
-			up: Phaser.Input.Keyboard.Key;
-			down: Phaser.Input.Keyboard.Key;
-			left: Phaser.Input.Keyboard.Key;
-			right: Phaser.Input.Keyboard.Key;
-		};
-
-		this.levelUpKey = this.input.keyboard?.addKey(
-			Phaser.Input.Keyboard.KeyCodes.U,
-		);
-
+		this.registerEventBusListeners();
 		EventBus.emit("current-scene-ready", this);
+		this.playerManager.emitPlayerStateChanged(true);
 	}
 
 	update() {
-		if (!this.player || !this.wasd) {
+		this.playerManager?.update();
+		this.interactionManager?.update();
+		this.treeManager?.update();
+	}
+
+	private registerEventBusListeners() {
+		EventBus.on("farm:plant-request", this.handlePlantRequest, this);
+		EventBus.on("farm:harvest-request", this.handleHarvestRequest, this);
+		EventBus.on("farm:water-request", this.handleWaterRequest, this);
+		EventBus.on("farm:fertilize-request", this.handleFertilizeRequest, this);
+		EventBus.on("farm:sulfate-request", this.handleSulfateRequest, this);
+		EventBus.on("farm:day-changed", this.handleDayChanged, this);
+		EventBus.on("audio:play", this.handleAudioPlay, this);
+		EventBus.on("audio:menu-ambience", this.handleMenuAmbience, this);
+		EventBus.on("farm:set-unlocked-fields", this.handleUnlockedFields, this);
+		EventBus.on("farm:set-tree-state", this.handleTreeState, this);
+		EventBus.on("farm:set-player-state", this.handlePlayerState, this);
+		EventBus.on("farm:set-selected-item", this.handleSelectedItem, this);
+		EventBus.on("ui:world-error", this.handleWorldError, this);
+
+		this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+			if (!this.suppressNextShutdownPlayerSave) {
+				this.playerManager.emitPlayerStateChanged(true);
+			}
+			this.unregisterEventBusListeners();
+			this.handleMenuAmbience(false);
+			this.menuAmbience?.destroy();
+			this.menuAmbience = undefined;
+			this.playerManager.destroy();
+			this.interactionManager.destroy();
+			this.treeManager.destroy();
+		});
+	}
+
+	private unregisterEventBusListeners() {
+		EventBus.off("farm:plant-request", this.handlePlantRequest, this);
+		EventBus.off("farm:harvest-request", this.handleHarvestRequest, this);
+		EventBus.off("farm:water-request", this.handleWaterRequest, this);
+		EventBus.off("farm:fertilize-request", this.handleFertilizeRequest, this);
+		EventBus.off("farm:sulfate-request", this.handleSulfateRequest, this);
+		EventBus.off("farm:day-changed", this.handleDayChanged, this);
+		EventBus.off("audio:play", this.handleAudioPlay, this);
+		EventBus.off("audio:menu-ambience", this.handleMenuAmbience, this);
+		EventBus.off("farm:set-unlocked-fields", this.handleUnlockedFields, this);
+		EventBus.off("farm:set-tree-state", this.handleTreeState, this);
+		EventBus.off("farm:set-player-state", this.handlePlayerState, this);
+		EventBus.off("farm:set-selected-item", this.handleSelectedItem, this);
+		EventBus.off("ui:world-error", this.handleWorldError, this);
+	}
+
+	private handlePlantRequest(payload: PlantRequestPayload) {
+		this.treeManager.handlePlantRequest(payload);
+	}
+
+	private handleHarvestRequest(payload: HarvestRequestPayload) {
+		this.treeManager.handleHarvestRequest(payload);
+	}
+
+	private handleWaterRequest(payload: ResultPayload) {
+		this.treeManager.handleWaterRequest(payload);
+	}
+
+	private handleFertilizeRequest(payload: ResultPayload) {
+		this.treeManager.handleFertilizeRequest(payload);
+	}
+
+	private handleSulfateRequest(payload: SulfateRequestPayload) {
+		this.treeManager.handleSulfateRequest(payload);
+	}
+
+	private handleDayChanged(day: number) {
+		this.treeManager.handleDayChanged(day);
+	}
+
+	private handleAudioPlay(payload: AudioPayload) {
+		const key = typeof payload === "string" ? payload : payload.key;
+		const volume = typeof payload === "string" ? 0.36 : (payload.volume ?? 0.36);
+		const audioKey = `sfx-${key}`;
+		if (!this.cache.audio.exists(audioKey)) {
 			return;
 		}
+		this.sound.play(audioKey, { volume });
+	}
 
-		if (this.levelUpKey && Phaser.Input.Keyboard.JustDown(this.levelUpKey)) {
-			EventBus.emit("hud:add-coins", 25);
-			EventBus.emit("hud:add-level", 1);
+	private handleMenuAmbience(shouldPlay: boolean) {
+		if (!this.cache.audio.exists("sfx-menu-ambience")) {
+			return;
 		}
-
-		const speed = 120;
-		this.player.setVelocity(0, 0);
-
-		const movingUp = this.wasd.up.isDown;
-		const movingDown = this.wasd.down.isDown;
-		const movingLeft = this.wasd.left.isDown;
-		const movingRight = this.wasd.right.isDown;
-
-		if (movingLeft) {
-			this.player.setVelocityX(-speed);
-			this.player.anims.play("player-walk-left", true);
-			this.lastDirection = "left";
-		} else if (movingRight) {
-			this.player.setVelocityX(speed);
-			this.player.anims.play("player-walk-right", true);
-			this.lastDirection = "right";
-		} else if (movingUp) {
-			this.player.setVelocityY(-speed);
-			this.player.anims.play("player-walk-up", true);
-			this.lastDirection = "up";
-		} else if (movingDown) {
-			this.player.setVelocityY(speed);
-			this.player.anims.play("player-walk-down", true);
-			this.lastDirection = "down";
-		} else {
-			this.player.anims.stop();
-			switch (this.lastDirection) {
-				case "left":
-					this.player.setFrame(12);
-					break;
-				case "right":
-					this.player.setFrame(4);
-					break;
-				case "up":
-					this.player.setFrame(8);
-					break;
-				default:
-					this.player.setFrame(0);
-					break;
-			}
+		if (!this.menuAmbience) {
+			this.menuAmbience = this.sound.add("sfx-menu-ambience", {
+				loop: true,
+				volume: 0.18,
+			});
 		}
-
-		// Show/hide centrifugadora prompts when player is near and handle F
-		if (this.centrifTexts.length > 0) {
-			const px = this.player.x;
-			const py = this.player.y;
-			let anyVisible = false;
-			let nearestVisibleCenter: { x: number; y: number } | null = null;
-			let nearestDistance = Number.POSITIVE_INFINITY;
-			for (let index = 0; index < this.centrifTexts.length; index += 1) {
-				const txt = this.centrifTexts[index];
-				const center = this.centrifCenters[index];
-				const dx = px - center.x;
-				const dy = py - center.y;
-				const dist = Math.sqrt(dx * dx + dy * dy);
-				const visible = dist < 72;
-				txt.setVisible(visible);
-				if (visible) {
-					anyVisible = true;
-					if (dist < nearestDistance) {
-						nearestDistance = dist;
-						nearestVisibleCenter = center;
-					}
-				}
+		if (shouldPlay) {
+			if (!this.menuAmbience.isPlaying) {
+				this.menuAmbience.play();
 			}
-
-			if (
-				anyVisible &&
-				this.interactKey &&
-				Phaser.Input.Keyboard.JustDown(this.interactKey)
-			) {
-				if (this.currentMapKey !== "centrifugadora") {
-					this.scene.restart({
-						mapKey: "centrifugadora",
-						returnSpawnX: nearestVisibleCenter?.x,
-						returnSpawnY: nearestVisibleCenter?.y,
-					});
-				} else {
-					this.scene.restart({
-						mapKey: "mapa",
-						spawnX: this.returnSpawn?.x,
-						spawnY: this.returnSpawn?.y,
-					});
-				}
-				EventBus.emit("centrif:interact");
-			}
+			return;
+		}
+		if (this.menuAmbience.isPlaying) {
+			this.menuAmbience.stop();
 		}
 	}
 
-	private createInteractionPrompt(
-		x: number,
-		y: number,
-	): Phaser.GameObjects.Container {
-		const badge = this.add.graphics();
-		badge.fillStyle(0x0f131b, 0.9);
-		badge.lineStyle(1, 0x5d6577, 0.95);
-		badge.fillRoundedRect(-54, -15, 108, 30, 10);
-		badge.strokeRoundedRect(-54, -15, 108, 30, 10);
-		badge.fillStyle(0xf9c74f, 0.95);
-		badge.fillRoundedRect(-47, -10, 20, 20, 6);
+	private handleUnlockedFields(fieldNames: string[]) {
+		this.mapManager.handleUnlockedFields(fieldNames);
+	}
 
-		const keyText = this.add
-			.text(-37, 0, "F", {
-				fontFamily: '"Press Start 2P", monospace',
-				fontSize: "9px",
-				color: "#1f1600",
-			})
-			.setOrigin(0.5);
+	private handleTreeState(trees: FarmTreeSave[]) {
+		this.treeManager.handleTreeState(trees);
+	}
+
+	private handlePlayerState(state: PlayerSave) {
+		this.playerManager.handlePlayerState(state);
+	}
+
+	private handleSelectedItem(itemId: string | null) {
+		this.treeManager.handleSelectedItem(itemId);
+	}
+
+	private handleWorldError(message: string) {
+		if (!this.player || !message) {
+			return;
+		}
 
 		const label = this.add
-			.text(6, 0, "INTERACT", {
-				fontFamily: '"Press Start 2P", monospace',
-				fontSize: "8px",
-				color: "#f7fafc",
-				stroke: "#0b0f16",
-				strokeThickness: 2,
+			.text(this.player.x, this.player.y - 42, message, {
+				fontFamily: "monospace",
+				fontSize: "9px",
+				color: "#fef3c7",
+				backgroundColor: "rgba(22, 25, 34, 0.82)",
+				padding: { x: 6, y: 4 },
+				align: "center",
+				wordWrap: { width: 150 },
 			})
-			.setOrigin(0.5);
+			.setOrigin(0.5)
+			.setDepth(20_000);
 
-		const container = this.add
-			.container(x, y, [badge, keyText, label])
-			.setDepth(200)
-			.setVisible(false);
-
-		container.setAlpha(0.95);
-		return container;
+		this.tweens.add({
+			targets: label,
+			y: label.y - 18,
+			alpha: 0,
+			duration: 1200,
+			ease: "Sine.easeOut",
+			onComplete: () => label.destroy(),
+		});
 	}
 }
