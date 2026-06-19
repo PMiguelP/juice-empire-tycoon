@@ -29,7 +29,25 @@ const config: Phaser.Types.Core.GameConfig = {
 };
 
 const StartGame = (parent: string) => {
-	return new Phaser.Game({ ...config, parent });
+	const game = new Phaser.Game({ ...config, parent });
+
+	// Chrome blocks AudioContext until a user gesture. Phaser listens on
+	// the canvas, but Vue overlays intercept clicks first, so we listen
+	// at the document level and resume manually.
+	const unlockAudio = () => {
+		const webAudio = game.sound as Phaser.Sound.WebAudioSoundManager;
+		if (webAudio?.context?.state === "suspended") {
+			webAudio.context.resume();
+		}
+		document.removeEventListener("click", unlockAudio);
+		document.removeEventListener("keydown", unlockAudio);
+		document.removeEventListener("touchstart", unlockAudio);
+	};
+	document.addEventListener("click", unlockAudio);
+	document.addEventListener("keydown", unlockAudio);
+	document.addEventListener("touchstart", unlockAudio);
+
+	return game;
 };
 
 export default StartGame;
