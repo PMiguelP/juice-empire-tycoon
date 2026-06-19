@@ -82,7 +82,7 @@ export const useDragAndDrop = (inventory: InventoryApi, market: MarketApi) => {
 		const quantity = getDropQuantity(source, event);
 
 		if (source.kind === "shop") {
-			market.buyIntoSlot(kind, index, source.itemId, quantity);
+			market.buyIntoSlot(kind, index, source.itemId, quantity ?? 1);
 		} else {
 			inventory.moveStack(
 				source.kind,

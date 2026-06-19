@@ -54,14 +54,15 @@ export class InteractionTargetResolver {
 			}
 		}
 
-		targets.push(
-			...getTileLayerTargets(
-				this.scene.map,
-				"poco",
-				"water",
-				this.getLabel("water"),
-			),
-		);
+		// Water well position (grid 53-59, y 73-76)
+		const wellBounds = { minX: 848, minY: 1168, maxX: 960, maxY: 1232 };
+		targets.push({
+			x: (wellBounds.minX + wellBounds.maxX) / 2,
+			y: wellBounds.maxY,
+			bounds: wellBounds,
+			action: "water",
+			label: this.getLabel("water"),
+		});
 
 		return targets;
 	}
@@ -158,8 +159,8 @@ export class InteractionTargetResolver {
 		label: string,
 	) {
 		return (
-			getObjectLayerCenterTarget(this.scene.map, layerName, action, label) ??
-			getTileLayerTargets(this.scene.map, layerName, action, label)[0] ??
+			getObjectLayerCenterTarget(this.scene.map ?? undefined, layerName, action, label) ??
+			getTileLayerTargets(this.scene.map ?? undefined, layerName, action, label)[0] ??
 			null
 		);
 	}

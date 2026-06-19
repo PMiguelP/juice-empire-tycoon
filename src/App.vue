@@ -48,9 +48,9 @@ const { toastMessage, showToast } = useToast();
 const itemVisual = getItemVisual;
 const itemQuantity = getItemQuantity;
 const itemMax = (item: InventoryEntry) => getMaxStack(getItemId(item));
-const menuItems = computed(() => text.value.radial.items);
+const menuItems = computed(() => [...text.value.radial.items]);
 const radialMessages = computed(() => text.value.radial.errors);
-const juiceRecipes = computed(() => text.value.juice.recipesList);
+const juiceRecipes = computed(() => [...text.value.juice.recipesList]);
 const toastLabels = computed(() => text.value.toasts);
 
 const {
@@ -97,7 +97,6 @@ const {
 const {
     activeIndex,
     selectedPlotIndex,
-    selectedContractId,
     selectedRecipeIndex,
     pointerPlantSeedId,
     currentMapKey,
@@ -477,15 +476,15 @@ watch(selectedItemId, (itemId) => {
             :is-plot-unlocked="isPlotUnlocked"
             :can-unlock-plot="canUnlockPlot"
             :contract-offers="contractOffers"
-            :active-contract="contractSummary"
-            :selected-contract="selectedContract"
-            :selected-contract-id="selectedContract?.id ?? null"
+            :active-contract="contractSummary ?? undefined"
+            :selected-contract="selectedContract ?? undefined"
+            :selected-contract-id="selectedContract?.id ?? undefined"
             :backpack="backpack"
             :barn-storage="barnStorage"
             :inventory="inventory"
             :sell-slots="sellSlots"
             :juice-slots="juiceSlots"
-            :selected-backpack-index="selectedBackpackIndex"
+            :selected-backpack-index="selectedBackpackIndex ?? undefined"
             :inventory-index="inventoryIndex"
             :shop-items="shopItems"
             :juice-recipes="juiceRecipes"

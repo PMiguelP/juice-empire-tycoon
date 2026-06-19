@@ -35,7 +35,7 @@ type RadialActionMessages = {
 
 type RadialActionOptions = {
 	activeIndex: Ref<number>;
-	menuItems: ComputedRef<RadialMenuItem[]>;
+	menuItems: ComputedRef<readonly RadialMenuItem[]>;
 	messages: ComputedRef<RadialActionMessages>;
 	quickbar: Ref<InventoryEntry[]>;
 	quickbarIndex: Ref<number>;

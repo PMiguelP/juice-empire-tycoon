@@ -25,8 +25,8 @@ export const useGameLoop = ({
 			if (!gameReady.value || mainMenuOpen.value || pauseMenuOpen.value) {
 				return;
 			}
-			advanceTime(10);
-		}, 3000);
+			advanceTime(3);
+		}, 1000);
 	});
 
 	onUnmounted(() => {

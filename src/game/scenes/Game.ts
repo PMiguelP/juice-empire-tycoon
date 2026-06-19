@@ -90,6 +90,7 @@ export class Game extends Phaser.Scene {
 		this.playerManager?.update();
 		this.interactionManager?.update();
 		this.treeManager?.update();
+
 	}
 
 	private registerEventBusListeners() {

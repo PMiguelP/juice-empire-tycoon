@@ -23,7 +23,7 @@ type JuiceToastLabels = {
 };
 
 type UseJuiceCraftOptions = {
-	recipes: ComputedRef<JuiceRecipe[]>;
+	recipes: ComputedRef<readonly JuiceRecipe[]>;
 	selectedRecipeIndex: Ref<number>;
 	juiceSlots: Ref<SlotEntry[]>;
 	backpack: Ref<SlotEntry[]>;

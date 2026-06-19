@@ -1,4 +1,4 @@
-import type { InventoryStack } from "../../items";
+import type { InventoryEntry } from "../../items";
 import { normalizeEntry } from "../../items";
 import { SAVE_VERSION, STARTING_COINS } from "./constants";
 import type { SaveData } from "./types";
@@ -17,7 +17,7 @@ export const getCoinsFromSave = (data: SaveData) => {
 };
 
 export const normalizeInventorySlots = (
-	items: InventoryStack[] | undefined,
+	items: InventoryEntry[] | undefined,
 	length: number,
 ) => {
 	return Array.from({ length }, (_, index) => {
