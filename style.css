@@ -657,6 +657,7 @@ body {
     stroke-width: 3.6;
 }
 
+/* -------- GAME MENU OVERLAY ------------------------------------ */
 .game-menu-overlay {
     position: absolute;
     inset: 0;
@@ -664,7 +665,7 @@ body {
     place-items: center;
     opacity: 0;
     pointer-events: none;
-    transition: opacity 0.2s ease;
+    transition: opacity 0.22s ease;
     z-index: 10;
 }
 
@@ -676,10 +677,8 @@ body {
 .game-menu-scrim {
     position: absolute;
     inset: 0;
-    background:
-        radial-gradient(circle at 35% 22%, rgba(249, 199, 79, 0.08), transparent 28%),
-        rgba(8, 10, 14, 0.78);
-    backdrop-filter: blur(4px);
+    background: rgba(5, 6, 10, 0.86);
+    backdrop-filter: blur(7px) saturate(0.75);
 }
 
 .game-menu-frame {
@@ -689,94 +688,137 @@ body {
     max-height: 90vh;
     overflow: auto;
     display: grid;
-    grid-template-columns: minmax(220px, 260px) 1fr;
+    grid-template-columns: minmax(210px, 240px) 1fr;
     gap: 0;
-    padding: 8px;
-    border-radius: 10px;
-    background:
-        linear-gradient(rgba(14, 16, 20, 0.94), rgba(14, 16, 20, 0.94)),
-        repeating-linear-gradient(90deg, #2a1710 0 16px, #1b100c 16px 32px);
-    border: 2px solid rgba(196, 128, 92, 0.6);
+    border-radius: 18px;
+    background: linear-gradient(160deg, rgba(18, 20, 28, 0.99), rgba(10, 12, 17, 0.99));
+    border: 1px solid rgba(196, 128, 92, 0.38);
     box-shadow:
-        0 34px 80px rgba(0, 0, 0, 0.64),
-        inset 0 0 0 1px rgba(255, 232, 184, 0.08);
+        0 48px 96px rgba(0, 0, 0, 0.72),
+        0 0 0 1px rgba(255, 232, 184, 0.05),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
+/* -------- SIDEBAR ---------------------------------------------- */
 .game-menu-sidebar {
     position: relative;
-    padding: 24px 18px;
-    border-right: 2px solid rgba(196, 128, 92, 0.45);
+    padding: 28px 20px 28px;
+    border-right: 1px solid rgba(196, 128, 92, 0.22);
     display: grid;
-    gap: 16px;
+    gap: 18px;
     align-content: start;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 18px 0 0 18px;
 }
 
 .game-menu-vine {
-    height: 54px;
+    height: 3px;
     border-radius: 999px;
-    background:
-        radial-gradient(circle at 24% 52%, #7bb85f 0 8px, transparent 9px),
-        radial-gradient(circle at 45% 32%, #9fcf71 0 6px, transparent 7px),
-        linear-gradient(125deg, transparent 0 42%, #8b5a3c 43% 48%, transparent 49%);
-    opacity: 0.9;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(144, 190, 109, 0.65) 30%,
+        rgba(249, 199, 79, 0.45) 60%,
+        transparent
+    );
+    margin: -4px 0 2px;
 }
 
 .game-menu-compass {
     justify-self: center;
-    width: 54px;
-    height: 54px;
+    width: 50px;
+    height: 50px;
     border-radius: 50%;
     display: grid;
     place-items: center;
-    background: #efe3c2;
-    border: 3px solid #8f5f49;
-    color: #533425;
+    background: radial-gradient(circle at 38% 34%, #f5ead4, #c8a070);
+    border: 2.5px solid rgba(143, 95, 73, 0.85);
+    color: #3a2212;
     font-family: "Press Start 2P", monospace;
-    font-size: 0.72rem;
-    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.35);
+    font-size: 0.68rem;
+    box-shadow:
+        0 6px 20px rgba(0, 0, 0, 0.45),
+        inset 0 2px 0 rgba(255, 255, 255, 0.42);
 }
 
 .game-menu-language {
-    border-radius: 8px;
-    border: 1px solid rgba(196, 128, 92, 0.55);
-    background: rgba(16, 14, 14, 0.86);
-    padding: 10px;
+    border-radius: 12px;
+    border: 1px solid rgba(196, 128, 92, 0.28);
+    background: rgba(255, 255, 255, 0.03);
+    padding: 12px;
     text-align: center;
 }
 
 .game-menu-side-label {
-    color: #f3d8ba;
+    color: rgba(243, 216, 186, 0.62);
+    font-size: 0.68rem;
     font-weight: 700;
-    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin-bottom: 10px;
 }
 
 .game-menu-language-buttons,
 .game-menu-actions {
     display: grid;
-    gap: 8px;
+    gap: 7px;
 }
 
 .game-menu-lang,
 .game-menu-button {
-    border: 1px solid rgba(196, 128, 92, 0.6);
-    border-radius: 9px;
-    background: rgba(24, 22, 22, 0.92);
-    color: #f6ead6;
-    padding: 9px 10px;
+    border: 1px solid rgba(196, 128, 92, 0.35);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.04);
+    color: rgba(246, 234, 214, 0.78);
+    padding: 10px 12px;
     cursor: pointer;
-    font-weight: 800;
+    font-weight: 700;
+    font-size: 0.8rem;
     text-transform: uppercase;
+    letter-spacing: 0.04em;
+    transition:
+        background 0.14s ease,
+        border-color 0.14s ease,
+        color 0.14s ease,
+        box-shadow 0.14s ease,
+        transform 0.1s ease;
+}
+
+.game-menu-lang:hover,
+.game-menu-button:hover {
+    background: rgba(196, 128, 92, 0.13);
+    border-color: rgba(196, 128, 92, 0.62);
+    color: #f6ead6;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+}
+
+.game-menu-lang:active,
+.game-menu-button:active {
+    transform: translateY(0);
+    box-shadow: none;
 }
 
 .game-menu-lang.is-active,
 .game-menu-button.is-primary {
-    border-color: rgba(144, 190, 109, 0.9);
-    background: linear-gradient(135deg, rgba(66, 96, 56, 0.95), rgba(34, 52, 34, 0.95));
-    box-shadow: 0 0 16px rgba(144, 190, 109, 0.28);
+    border-color: rgba(144, 190, 109, 0.72);
+    background: linear-gradient(135deg, rgba(58, 88, 48, 0.94), rgba(30, 46, 30, 0.94));
+    color: #ceeea0;
+    box-shadow:
+        0 0 20px rgba(144, 190, 109, 0.18),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
+.game-menu-button.is-primary:hover {
+    background: linear-gradient(135deg, rgba(72, 108, 58, 0.97), rgba(40, 58, 38, 0.97));
+    box-shadow:
+        0 4px 22px rgba(144, 190, 109, 0.28),
+        inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+/* -------- GUIDE AREA ------------------------------------------- */
 .game-menu-guide {
-    padding: 26px;
+    padding: 28px 28px 24px;
     display: grid;
     gap: 18px;
     align-content: start;
@@ -784,130 +826,144 @@ body {
 
 .game-menu-tabs {
     display: flex;
-    gap: 8px;
-    border-bottom: 2px solid rgba(196, 128, 92, 0.45);
+    gap: 6px;
+    border-bottom: 1px solid rgba(196, 128, 92, 0.28);
+    padding-bottom: 0;
 }
 
 .game-menu-tab {
-    border: 2px solid rgba(196, 128, 92, 0.6);
+    border: 1px solid rgba(196, 128, 92, 0.42);
     border-bottom: 0;
-    border-radius: 10px 10px 0 0;
-    background: rgba(24, 22, 22, 0.94);
+    border-radius: 9px 9px 0 0;
+    background: rgba(44, 32, 22, 0.88);
     color: #f3d8ba;
-    padding: 10px 16px;
-    font-weight: 900;
+    padding: 9px 18px;
+    font-weight: 800;
+    font-size: 0.76rem;
     text-transform: uppercase;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    position: relative;
+    bottom: -1px;
 }
 
 .game-menu-tab.is-active {
-    background: rgba(52, 38, 28, 0.98);
+    background: linear-gradient(180deg, rgba(68, 48, 32, 0.98), rgba(48, 34, 22, 0.98));
+    border-color: rgba(196, 128, 92, 0.52);
+    border-bottom-color: transparent;
 }
 
 .game-menu-heading {
     text-align: center;
+    padding: 2px 0 4px;
 }
 
 .game-menu-title {
-    color: #f3d8ba;
+    color: #f0d8b4;
     font-family: "Press Start 2P", monospace;
-    font-size: clamp(1rem, 2vw, 1.35rem);
+    font-size: clamp(0.88rem, 2vw, 1.22rem);
     margin-bottom: 8px;
+    text-shadow: 0 2px 16px rgba(249, 199, 79, 0.18);
+    letter-spacing: 0.04em;
 }
 
 .game-menu-subtitle {
-    color: rgba(246, 234, 214, 0.76);
-    font-size: 0.9rem;
+    color: rgba(246, 234, 214, 0.62);
+    font-size: 0.86rem;
 }
 
+/* -------- GUIDE CARDS ------------------------------------------ */
 .game-guide-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 14px;
+    gap: 11px;
 }
 
 .game-guide-card {
-    min-height: 170px;
-    padding: 16px;
-    border-radius: 8px;
-    background:
-        linear-gradient(rgba(250, 228, 187, 0.94), rgba(236, 204, 154, 0.94)),
-        repeating-linear-gradient(0deg, transparent 0 14px, rgba(87, 54, 33, 0.06) 14px 16px);
-    border: 2px solid rgba(86, 49, 31, 0.8);
-    box-shadow: inset 0 0 0 1px rgba(255, 250, 222, 0.5);
+    min-height: 158px;
+    padding: 16px 18px;
+    border-radius: 12px;
+    background: linear-gradient(
+        170deg,
+        rgba(248, 227, 186, 0.97) 0%,
+        rgba(232, 200, 148, 0.97) 100%
+    );
+    border: 1.5px solid rgba(86, 49, 31, 0.65);
+    box-shadow:
+        0 4px 14px rgba(0, 0, 0, 0.26),
+        inset 0 1px 0 rgba(255, 255, 255, 0.68),
+        inset 0 -1px 0 rgba(86, 49, 31, 0.1);
     color: #2e1a12;
 }
 
 .game-guide-card-title {
     font-family: "Press Start 2P", monospace;
-    font-size: 0.86rem;
-    margin-bottom: 10px;
+    font-size: 0.72rem;
+    margin-bottom: 11px;
     text-transform: uppercase;
+    color: #3d1f10;
+    letter-spacing: 0.03em;
 }
 
 .game-key-art {
-    min-height: 72px;
+    min-height: 64px;
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: 6px;
     align-items: center;
-    margin-bottom: 12px;
+    margin-bottom: 11px;
 }
 
 .game-key-art.is-wasd {
-    width: 150px;
+    width: 140px;
     display: grid;
-    grid-template-columns: repeat(3, 42px);
+    grid-template-columns: repeat(3, 40px);
     grid-template-areas:
         ". w ."
         "a s d";
 }
 
-.game-key-art.is-wasd .game-keycap:nth-child(1) {
-    grid-area: w;
-}
-
-.game-key-art.is-wasd .game-keycap:nth-child(2) {
-    grid-area: a;
-}
-
-.game-key-art.is-wasd .game-keycap:nth-child(3) {
-    grid-area: s;
-}
-
-.game-key-art.is-wasd .game-keycap:nth-child(4) {
-    grid-area: d;
-}
+.game-key-art.is-wasd .game-keycap:nth-child(1) { grid-area: w; }
+.game-key-art.is-wasd .game-keycap:nth-child(2) { grid-area: a; }
+.game-key-art.is-wasd .game-keycap:nth-child(3) { grid-area: s; }
+.game-key-art.is-wasd .game-keycap:nth-child(4) { grid-area: d; }
 
 .game-keycap {
-    min-width: 38px;
-    height: 38px;
+    min-width: 36px;
+    height: 36px;
     padding: 0 8px;
-    border-radius: 7px;
+    border-radius: 6px;
     display: inline-grid;
     place-items: center;
-    background: linear-gradient(#8c5a40, #5b3528);
-    border: 2px solid #2f1b14;
+    background: linear-gradient(180deg, #7a4f36 0%, #4a2c1c 100%);
+    border: 1.5px solid #2a1510;
     box-shadow:
-        inset 0 2px 0 rgba(255, 236, 190, 0.3),
-        0 4px 0 #2d1912;
+        inset 0 2px 0 rgba(255, 236, 190, 0.26),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.24),
+        0 3px 0 #1e0e09,
+        0 4px 8px rgba(0, 0, 0, 0.28);
     color: #f9e8c6;
     font-family: "Press Start 2P", monospace;
-    font-size: 0.76rem;
+    font-size: 0.68rem;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    user-select: none;
 }
 
 .game-keycap.is-wide {
-    min-width: 64px;
+    min-width: 62px;
+    font-size: 0.58rem;
 }
 
 .game-guide-text {
-    font-size: 0.9rem;
-    line-height: 1.25;
+    font-size: 0.85rem;
+    line-height: 1.3;
+    color: #3a2116;
 }
 
 .game-menu-footnote {
     text-align: center;
-    color: rgba(246, 234, 214, 0.64);
-    font-size: 0.76rem;
+    color: rgba(246, 234, 214, 0.44);
+    font-size: 0.7rem;
 }
 
 .farm-overlay {
