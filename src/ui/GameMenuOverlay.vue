@@ -53,40 +53,42 @@ const controlCards = computed(() => [
 	},
 ]);
 
+const base = import.meta.env.BASE_URL;
+
 const locationCards = computed(() => [
 	{
-		exterior: "/assets/Campos_Quests_House.png",
-		interior: "/assets/camera.jpg",
+		exterior: `${base}assets/Campos_Quests_House.png`,
+		interior: `${base}assets/camera.jpg`,
 		label: props.text.mainMenu.locations.farm,
 		desc:  props.text.mainMenu.locations.farmDesc,
 	},
 	{
-		exterior: "/assets/Shop_Items.png",
-		interior: "/assets/mercadocompra.png",
+		exterior: `${base}assets/Shop_Items.png`,
+		interior: `${base}assets/mercadocompra.png`,
 		label: props.text.mainMenu.locations.shop,
 		desc:  props.text.mainMenu.locations.shopDesc,
 	},
 	{
-		exterior: "/assets/Sell_Item.png",
-		interior: "/assets/mercado.jpg",
+		exterior: `${base}assets/Sell_Item.png`,
+		interior: `${base}assets/mercado.jpg`,
 		label: props.text.mainMenu.locations.sell,
 		desc:  props.text.mainMenu.locations.sellDesc,
 	},
 	{
-		exterior: "/assets/Centrifugadora_House.png",
-		interior: "/assets/centrifugadora.jpg",
+		exterior: `${base}assets/Centrifugadora_House.png`,
+		interior: `${base}assets/centrifugadora.jpg`,
 		label: props.text.mainMenu.locations.juicer,
 		desc:  props.text.mainMenu.locations.juicerDesc,
 	},
 	{
-		exterior: "/assets/Celeiro_House.png",
-		interior: "/assets/barnbau.png",
+		exterior: `${base}assets/Celeiro_House.png`,
+		interior: `${base}assets/barnbau.png`,
 		label: props.text.mainMenu.locations.barn,
 		desc:  props.text.mainMenu.locations.barnDesc,
 	},
 	{
-		exterior: "/assets/Well.png",
-		interior: "/assets/Well.png",
+		exterior: `${base}assets/Well.png`,
+		interior: `${base}assets/Well.png`,
 		label: props.text.mainMenu.locations.well,
 		desc:  props.text.mainMenu.locations.wellDesc,
 	},
