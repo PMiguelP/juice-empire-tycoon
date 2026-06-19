@@ -1,11 +1,11 @@
 import type { SulfateQuality, TreePlant } from "./types";
 
-const PEST_CHANCE = 0.16;
-const FERTILIZED_PEST_CHANCE = 0.08;
+const PEST_CHANCE = 0.10;           // was 0.16 — 1-in-10 chance per day
+const FERTILIZED_PEST_CHANCE = 0.04; // was 0.08 — fertilizer halves the risk
 const SULFATE_PROTECTION_DAYS: Record<SulfateQuality, number> = {
-	perfect: 3,
-	good: 2,
-	poor: 1,
+	perfect: 4, // was 3
+	good:    2,
+	poor:    1,
 };
 
 export class TreePestSystem {

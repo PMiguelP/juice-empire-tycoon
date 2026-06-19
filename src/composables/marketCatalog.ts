@@ -32,17 +32,17 @@ export const SELL_PRICES: Record<string, number> = {
 	"sulfate-basic": 8,
 	"sulfate-strong": 19,
 	"sulfate-premium": 36,
-	orange: 6,
-	pomegranate: 9,
-	peach: 8,
-	lemon: 5,
+	orange:       10, // was 6
+	pomegranate:  15, // was 9
+	peach:        13, // was 8
+	lemon:        8,  // was 5
 	water: 2,
 	"filled-water-jug": 2,
 	"empty-bottle": 4,
-	"orange-juice": 28,
-	"pomegranate-juice": 38,
-	"peach-juice": 34,
-	"lemon-juice": 26,
+	"orange-juice":      42, // was 28
+	"pomegranate-juice": 58, // was 38
+	"peach-juice":       52, // was 34
+	"lemon-juice":       38, // was 26
 	shovel: 75,
 	scissors: 48,
 	"watering-can": 60,

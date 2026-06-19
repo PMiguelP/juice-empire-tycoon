@@ -31,7 +31,8 @@ const getSeededContractSort = (day: number, index: number) => {
 };
 
 export const createContractOffersForDay = (day: number): ContractSave[] => {
-	const difficultyBonus = Math.min(8, Math.floor((day - 1) / 2));
+	// Difficulty ramps +1 every 3 days (was every 2), capped at 5 (was 8)
+	const difficultyBonus = Math.min(5, Math.floor((day - 1) / 3));
 	const shuffledTargets = CONTRACT_TARGETS.map((target, index) => ({
 		target,
 		sort: getSeededContractSort(day, index),
@@ -40,7 +41,7 @@ export const createContractOffersForDay = (day: number): ContractSave[] => {
 		.slice(0, 4);
 
 	return shuffledTargets.map(({ target }, index) => {
-		const sizeBonus = index % 2 === 0 ? 0 : 2;
+		const sizeBonus = index % 2 === 0 ? 0 : 1; // was 2
 		const required = target.required + difficultyBonus + sizeBonus;
 		return {
 			id: `contract-day-${day}-${index + 1}`,
@@ -48,7 +49,7 @@ export const createContractOffersForDay = (day: number): ContractSave[] => {
 			fruitId: target.itemId,
 			required,
 			progress: 0,
-			reward: target.reward + day * 8 + required * 4 + index * 10,
+			reward: target.reward + day * 10 + required * 5 + index * 12,
 			completed: false,
 			durationMinutes: CONTRACT_DURATION_MINUTES,
 		};

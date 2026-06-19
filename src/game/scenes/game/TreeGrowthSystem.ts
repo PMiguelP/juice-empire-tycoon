@@ -20,8 +20,7 @@ export class TreeGrowthSystem {
 			tree.hasFruit ||
 			tree.isRegrowing ||
 			tree.harvestCount >= 3 ||
-			!tree.isWatered ||
-			!tree.isFertilized
+			!tree.isWatered   // fertilizer now optional — gives speed bonus only
 		) {
 			return;
 		}
